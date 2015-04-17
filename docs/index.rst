@@ -1,8 +1,8 @@
 .. _index:
 
-*****
-Prost
-*****
+********
+*Prost!*
+********
 
 *Prost!* (PRocessing Of Small Transcripts) is a python application that
 quantifies and annotates microRNA (miRNA) expression in chordates and
