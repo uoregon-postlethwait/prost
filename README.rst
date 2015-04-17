@@ -1,1 +1,1 @@
-Please see the documentation at http://prost.readthedocs.org.
+Please see the documentation at https://prost.readthedocs.org.
