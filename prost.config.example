@@ -1,0 +1,99 @@
+[General]
+# Required: Specify the three letter abbreviation of the species your samples
+# are taken from.  For example, mouse is 'mmu', zebrafish is 'dre'.
+species: mmu
+
+# The file containing the list of samples files.
+# samples_filelist: samples_filelist
+
+# The maximum number of threads (processors) to use for various operations.
+# max_threads: 4
+
+# The prefix to use for Prost! output filenames.
+# output_file_prefix: prost_output
+
+# The minimum number times a sequence must appear as a read in the samples
+# datasets in order to be included.
+# min_seq_count: 30
+
+# A sequence must have at least min_seq_length basepairs in order to be
+# included by Prost!
+# min_seq_length: 14
+
+# A sequence must have at most max_seq_length basepairs in order to be
+# included by Prost!
+# max_seq_length: 28
+
+# The maximum genetic wiggle.
+# wiggle: 5
+
+# The maximum number of genetic locations to report per sequence (if exceeded,
+# it is simply reported as TML (too many locations).
+# max_locations_to_report: 20
+
+# Skip all sequence alignments.
+# skip_sequence_alignments: no
+
+# Skip the genome sequence alignment.
+# skip_genome_alignment: no
+
+# Skip the annotation sequence alignments.
+# skip_annotation_alignments: no
+
+# Note: This alignment exists for documentation purposes only.  It describes
+# how to configure the several [*Alignments] below.
+# ---
+# [GenericAlignment]
+# name: A human readable name for this alignment.
+# tool: (bbmap|bbmapskimmer)
+# db: Path to the aligner's reference.
+# max_3p_mismatches: Maximum number of mismatches on the 3p end.
+# max_non_3p_mismatches: Maximum number of mismatches on the 5p end and the
+#   core of the alignment.  Effectively, this determines the maximum
+#   designation of any sequence/bin in all Prost! output.
+# allow_indels: (yes|no)
+# type: Applicable only for AnnotationAlignments.
+#   (MirbaseMirAnnotation|MirbaseHairpinAnnotation|BiomartOtherRNAAnnotation)
+# indelnt_penalty_multiplier: Inserted/deleted nucleotides penalty multiplier (X).
+#       Multiply the number of inserted or deleted nucleotides by X and add to
+#       the number of non-3-prime mismatches in the alignment (Y); if Y is
+#       greater than max_non_3p_mismatches, the hit will be rejected. 
+
+
+# For the genome alignment, we recommend keeping the number of non-3-prime
+# mismatches to '2' (i.e. 5-prime mismatches and "core" mismatches).
+[GenomeAlignment]
+name: genome
+tool: bbmap
+db: /some/path/to/Mus_musculus.genome.db
+max_3p_mismatches: 3
+max_non_3p_mismatches: 2
+allow_indels: yes
+indelnt_penalty_multiplier: 3
+
+[AnnotationAlignment1]
+type: MirbaseMirAnnotation
+name: matures
+tool: bbmap
+db: /some/path/to/mature_miR.annotation.db
+max_3p_mismatches: 0
+max_non_3p_mismatches: 0
+allow_indels: no
+
+[AnnotationAlignment2]
+type: MirbaseHairpinAnnotation
+name: hairpins
+tool: bbmap
+db: /some/path/to/hairpin.annotation.db
+max_3p_mismatches: 0
+max_non_3p_mismatches: 0
+allow_indels: no
+
+[AnnotationAlignment3]
+type: BiomartOtherRNAAnnotation
+name: other
+tool: bbmap
+db: /some/path/to/otherRNAs.annotation.db
+max_3p_mismatches: 0
+max_non_3p_mismatches: 0
+allow_indels: no

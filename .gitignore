@@ -1,0 +1,34 @@
+# Stuff we should ignore in the final project
+docs/_build/**
+.file_cache*
+alignment_results_*
+prost_output*
+search_annotations.fa
+search_genome.fa
+samples_filelist
+prost.log
+
+# Stuff we may never need
+EXECUTION.medium.E12.5.0112
+EXECUTION.medium.E12.5.7
+_setup_large
+_setup_medium
+_setup_small
+_setup_with_gaps
+old/
+params_blast_hairpins
+params_blast_mature
+params_blast_other_rnas
+saved.output/
+
+old.test
+
+# Compiled python modules
+*.pyc
+
+# Ignore package build
+/build/
+/dist/
+
+# Python egg metadata
+/*.egg-info
