@@ -1,5 +1,4 @@
 # Stuff we should ignore in the final project
-docs/_build/**
 .file_cache*
 alignment_results_*
 prost_output*
