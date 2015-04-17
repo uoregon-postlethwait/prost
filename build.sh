@@ -2,7 +2,7 @@
 
 # setup autodoc
 echo ; echo '--> Setting up autodoc...'
-sphinx-apidoc -f -o doc/source prost
+sphinx-apidoc -f -o docs/source prost
 
 # setup version
 echo ; echo '--> Setting up version...'
@@ -11,7 +11,7 @@ echo __version__ = \"`cat VERSION`\" >> prost/_version.py
 
 # Build docs
 echo ; echo '--> Building docs...'
-(cd doc; make html)
+(cd docs; make html)
 
 # Build it
 echo ; echo '--> Building package...'
