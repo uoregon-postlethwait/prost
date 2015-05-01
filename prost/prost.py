@@ -3711,10 +3711,12 @@ class ModificationThing(object):
         elif member_hit.cigar_tokens_5pto3p[-1][1] == '=':
             pass
         else:
-            raise Exception, "token_kind '{}' not allowed".format(
-                    member_hit.cigar_tokens_5pto3p[-1][1])
-
-
+            raise Exception, (
+                "token_kind '{}' not allowed (E1)\n"
+                "main_hit = {}\n"
+                "member_hit = {}".format(
+                    member_hit.cigar_tokens_5pto3p[-1][1], main_hit,
+                    member_hit))
 
         ## Get offset: How many nts on 5p side the member_hit is offset from main_hit.
         offset = (member_hit.reference_start_with_clips -
@@ -3825,8 +3827,11 @@ class ModificationThing(object):
                 elif token_kind == '=':
                     pass
                 else:
-                    raise Exception, "token_kind '{}' not allowed".format(
-                        token_kind)
+                    raise Exception, (
+                        "token_kind '{}' not allowed (E2)\n"
+                        "main_hit = {}\n"
+                        "member_hit = {}".format(
+                            token_kind, main_hit, member_hit))
 
         # Walk down member_cigar_tokens, recording coord(s) of mismatch(es)
         for token in member_cigar_tokens:
@@ -3836,7 +3841,11 @@ class ModificationThing(object):
             elif token[1] == '=':
                 pass
             else:
-                raise Exception, "token_kind '{}' not allowed".format(token[1])
+                raise Exception, (
+                    "token_kind '{}' not allowed (E3)\n"
+                    "main_hit = {}\n"
+                    "member_hit = {}".format(token[1], main_hit, member_hit))
+
             curr_pos += token[0]
 
         return tuple(mm_coords)
