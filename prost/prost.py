@@ -30,20 +30,23 @@ __version_info__ = tuple(__version__.split('.'))
 
 # Prost imports
 from prost.constants import *
-from prost.common import (  ConfigurationException,
-                            CannotContinueException,
-                            PrerequisitesException,
-                            MirModificationCalculationException,
-                            ArgumentTypeException,
-                            pmsg,
-                            perr,
-                            SlotPickleMixin,
-                            Progress)
+from prost.common import (
+    ConfigurationException,
+    CannotContinueException,
+    PrerequisitesException,
+    MirModificationCalculationException,
+    ModificationThingEncounteredNAlignment,
+    ArgumentTypeException,
+    pmsg,
+    perr,
+    SlotPickleMixin,
+    Progress)
 from prost.alignment import (Alignments, GenomeAlignment)
-#from prost.db_caching import ( DB_PROXY,
-#                                SequenceDB,
-#                                ShortSeqCache,
-#                                GenomicLocationCache)
+#from prost.db_caching import (
+#    DB_PROXY,
+#    SequenceDB,
+#    ShortSeqCache,
+#    GenomicLocationCache)
 import prost.excel
 
 # Other imports
@@ -3447,8 +3450,21 @@ class GenLocBin(Bin):
             for gl_ss, gl_main in itertools.izip_longest(
                     short_seq.genomic_locations, main_seq.genomic_locations):
 
-                mod_thing = ModificationThing(gl_main, gl_ss)
-                mod_things.append(mod_thing)
+                try:
+                    mod_thing = ModificationThing(gl_main, gl_ss)
+                    mod_things.append(mod_thing)
+                except ModificationThingEncounteredNAlignment:
+                    # Aligned to an 'N' (i.e. cigar has an 'M').
+                    # Ignore for calculations and log.
+                    pmsg(
+                        "Warning: While trying to calculate % miR "
+                        "modifications, the binstarter sequence or the member "
+                        "sequence aligned to one or more 'N's in the "
+                        "reference genome:\n"
+                        "   main_hit:   {}\n"
+                        "   member_hit: {}\n".format(
+                            gl_main, gl_ss)
+                    )
 
             # Collect any disagreements about the properties between the
             # different genomic locations about the modification properties.
@@ -3710,8 +3726,12 @@ class ModificationThing(object):
             self.is_3p_mismatch = True
         elif member_hit.cigar_tokens_5pto3p[-1][1] == '=':
             pass
+        elif member_hit.cigar_tokens_5pto3p[-1][1] == 'M':
+            # Encountered an M in one of the alignments. Ignore and
+            # log.
+            raise ModificationThingEncounteredNAlignment
         else:
-            raise Exception, (
+            raise MirModificationCalculationException, (
                 "token_kind '{}' not allowed (E1)\n"
                 "main_hit = {}\n"
                 "member_hit = {}".format(
@@ -3826,8 +3846,12 @@ class ModificationThing(object):
                     mm_coords.append(i + offset + 1)
                 elif token_kind == '=':
                     pass
+                elif token_kind == 'M':
+                    # Encountered an M in one of the alignments. Ignore and
+                    # log.
+                    raise ModificationThingEncounteredNAlignment
                 else:
-                    raise Exception, (
+                    raise MirModificationCalculationException, (
                         "token_kind '{}' not allowed (E2)\n"
                         "main_hit = {}\n"
                         "member_hit = {}".format(
@@ -3840,8 +3864,12 @@ class ModificationThing(object):
                     mm_coords.append(curr_pos + i)
             elif token[1] == '=':
                 pass
+            elif token[1] == 'M':
+                # Encountered an M in one of the alignments. Ignore and
+                # log.
+                raise ModificationThingEncounteredNAlignment
             else:
-                raise Exception, (
+                raise MirModificationCalculationException, (
                     "token_kind '{}' not allowed (E3)\n"
                     "main_hit = {}\n"
                     "member_hit = {}".format(token[1], main_hit, member_hit))

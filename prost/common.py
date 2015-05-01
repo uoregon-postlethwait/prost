@@ -45,6 +45,11 @@ class SamMDTagParsingException(Exception):
 class MirModificationCalculationException(Exception):
     """Problems with the calculation of miRNA modification percents.  This
     exception exists to help us catch unexpected situations."""
+class ModificationThingEncounteredNAlignment(Exception):
+    """While building the ModifcationThing, either the main or member genomic
+    location had a "M" in it, meaning that it aligned to an 'N' in the
+    reference genome.  We ignore these for the calculation and log their
+    existance."""
 class ArgumentTypeException(Exception):
     """Passed in the incorrect type of argument."""
 class UnmappedAlignmentException(Exception):
