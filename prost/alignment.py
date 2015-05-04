@@ -537,7 +537,13 @@ class BBMapAlignmentExecution(AlignmentExecution):
         params['in'] = self.input_file
         params['threads'] = str(self._max_threads)
         params['path'] = os.path.expanduser(self.seq_db)
-        params['maxindel'] = str(self.max_non_3p_mismatches)
+        if self._allow_indels:
+            params['maxindel'] = str(
+                self.max_non_3p_mismatches //
+                self.indelnt_penalty_multiplier)
+        else:
+            params['maxindel'] = "0"
+
 
         # Calculate BBMap param 'minid' ("approximate minimum alignment
         # identity") and idfilter (independant of minid; sets exact minimum
