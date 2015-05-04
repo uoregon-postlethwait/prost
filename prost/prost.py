@@ -484,7 +484,7 @@ class Configuration(object):
 
         self._argparser.add_argument('-V','--version',
                 action = 'version',
-                version = '%(prog)s {version}'.format(version=__version__))
+                version = '%(prog)s v{version}'.format(version=__version__))
 
         self._argparser.add_argument('-v','--verbose',
                 help = """Be more verbose about each step.
