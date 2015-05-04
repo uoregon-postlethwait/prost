@@ -3380,7 +3380,7 @@ class GenLocBin(Bin):
             compressed_by_genomic_location code and the
             compressed_by_genomic_location_and_annotation code.
 
-        Args:
+        Arguments:
             short_seqs (ShortSeqs): The ShortSeqs singleton.
 
         """
@@ -3465,6 +3465,13 @@ class GenLocBin(Bin):
                         "   member_hit: {}\n".format(
                             gl_main, gl_ss)
                     )
+
+            # It's possible that no ModificationThings were actually created
+            # (for example, the BinStarter aligns to a region with an "N").
+            # In that case, we simply return without making any adjustments to
+            # totals.
+            if len(mod_things) == 0:
+                return
 
             # Collect any disagreements about the properties between the
             # different genomic locations about the modification properties.
@@ -3711,6 +3718,10 @@ class ModificationThing(object):
 
 
             """
+
+        ## Bail and log if the BinStarter aligns to a region with an 'N'
+        if any(t[1] == 'M' for t in main_hit.cigar_tokens):
+            raise ModificationThingEncounteredNAlignment
 
         ## Seed shifted?
         self.is_seed_shifted = (
