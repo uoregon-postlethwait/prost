@@ -68,7 +68,7 @@ tool: bbmap
 db: /some/path/to/Mus_musculus.genome.db
 max_3p_mismatches: 3
 max_non_3p_mismatches: 2
-allow_indels: yes
+allow_indels: no
 indelnt_penalty_multiplier: 3
 
 [AnnotationAlignment1]
