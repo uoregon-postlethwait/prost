@@ -210,7 +210,7 @@ def to_wiggle_fingerprints(gen_locs, max_seq_len):
     1. The starting basepair of the first genomic location.
     2. A sorted tuple of all the linkage groups of the genomic locations.
     3. A tuple of the strands on which the genomic locations are found (i.e.
-        either 5'->3' or 3'->5').
+        either 5´->3´ or 3´->5´).
 
     The 2nd and 3rd subfingerprint above are identical between the two
     fingerprints, while the 1st subfingerprint above differs.
@@ -285,7 +285,7 @@ def to_wiggle_fingerprints(gen_locs, max_seq_len):
     # Linkage group fingerprint
     lg_fingerprint = tuple(gl.lg for gl in gen_locs)
 
-    # Strand fingerprint ('1' means 5'->3', '-1' means 3'->5')
+    # Strand fingerprint ('1' means 5´->3´, '-1' means 3´->5´)
     strand_fingerprint = \
             tuple(sorted(((1 if (gl.start - gl.end < 0) else -1) for gl in gen_locs)))
 
@@ -1155,10 +1155,10 @@ class ShortSeq(SlotPickleMixin):
 
     @property
     def three_prime_supplementary(self):
-        """The 3'-supplementary region of this ShortSeq.
+        """The 3´-supplementary region of this ShortSeq.
 
         Returns:
-            str: The 4 nucleotide 3'-supplementary region (nts 13-16).
+            str: The 4 nucleotide 3´-supplementary region (nts 13-16).
 
         """
         return self.seq_str[12:16]
@@ -2823,9 +2823,6 @@ class Bin(SlotPickleMixin):
             'joining_short_seq_strs',
             'idx',
             'per_sample_read_totals',
-            'per_sample_alt_cut_totals',
-            'per_sample_addition_totals',
-            'per_sample_edition_totals',
 
             # Alternatively cut on 5prime (templated or untemplated?)
             'per_sample_seed_shifted_totals',
@@ -2862,10 +2859,6 @@ class Bin(SlotPickleMixin):
         self.joining_short_seq_strs = []
         self.idx = idx
         self.per_sample_read_totals = None
-        self.per_sample_alt_cut_totals = None
-        self.per_sample_addition_totals = None
-        self.per_sample_edition_totals = None
-
         self.per_sample_seed_shifted_totals = None
         self.per_sample_seed_edited_totals = None
         self.per_sample_3p_supplementary_edited_totals = None
@@ -2911,63 +2904,6 @@ class Bin(SlotPickleMixin):
 
             # Calc & cache per-sample read count totals across this Bin
             self.per_sample_read_totals += short_seq.samples_counts
-
-    def per_sample_perc_alternatively_cut(self, na):
-        """Calculate the per-sample percentage of this Bin's members which have
-        been alteratively cut.
-
-        Args:
-            na (bool): If na is true, then instead return a list of same length
-                but filled with 'NA's. Useful for output purposes.
-
-        Returns:
-            [float]: An array of floats representing the per-sample percentage
-                of this Bin's members which have been alternatively cut. Or an
-                array of 'NA's if 'na' is True.
-
-        """
-        if na:
-            return self.per_sample_alt_cut_totals.na()
-        else:
-            return self.per_sample_alt_cut_totals.perc(self.per_sample_read_totals)
-
-    def per_sample_perc_addition(self, na):
-        """Calculate the per-sample percentage of this Bin's members which have
-        have addition to either 3' or 5' end.
-
-        Args:
-            na (bool): If na is true, then instead return a list of same length
-                but filled with 'NA's. Useful for output purposes.
-
-        Returns:
-            [float]: An array of floats representing the per-sample percentage
-                of this Bin's members which have addition.  Or an array of 'NA's
-                if 'na' is True.
-
-        """
-        if na:
-            return self.per_sample_addition_totals.na()
-        else:
-            return self.per_sample_addition_totals.perc(self.per_sample_read_totals)
-
-    def per_sample_perc_edition(self, na):
-        """Calculate the per-sample percentage of this Bin's members which have
-        have one or more edited bases within the middle of the miR.
-
-        Args:
-            na (bool): If na is true, then instead return a list of same length
-                but filled with 'NA's. Useful for output purposes.
-
-        Returns:
-            [float]: An array of floats representing the per-sample percentage
-                of this Bin's members which have edition.  Or an array of 'NA's
-                if 'na' is True.
-
-        """
-        if na:
-            return self.per_sample_edition_totals.na()
-        else:
-            return self.per_sample_edition_totals.perc(self.per_sample_read_totals)
 
     def per_sample_perc_seed_shifted(self, na):
         """Calculate the per-sample percentage of this Bin's members which have
@@ -3273,7 +3209,9 @@ class GenLocBin(Bin):
             this algorithm:
                 If the DESIGNATION_ONE_OR_TWO member sequences have any
                 annotations, then the set of those member sequences' annotations
-                become the bin's annotations.
+                become the bin's annotations.  If they do not, then the set of
+                the members' annotations (i.e. all the 3's and above) are
+                collected and become the bin's annotations.
 
             For all other columns, we follow this algorithm:
                 The set of the members' annotations are collected and become the
@@ -3387,9 +3325,6 @@ class GenLocBin(Bin):
         main_seq = short_seqs[self.main_short_seq_str]
         num_samples = main_seq.samples_counts.num_samples
         self.per_sample_read_totals = SamplesCountsWithNorms(num_samples)
-        self.per_sample_alt_cut_totals = SamplesCounts(num_samples)
-        self.per_sample_addition_totals = SamplesCounts(num_samples)
-        self.per_sample_edition_totals = SamplesCounts(num_samples)
         self.per_sample_seed_shifted_totals = SamplesCounts(num_samples)
         self.per_sample_seed_edited_totals = SamplesCounts(num_samples)
         self.per_sample_3p_supplementary_edited_totals = SamplesCounts(num_samples)
@@ -3408,23 +3343,8 @@ class GenLocBin(Bin):
             # Calc & cache per-sample read count totals across this Bin
             self.per_sample_read_totals += short_seq.samples_counts
 
-            ## Old Code
-
-            # Calc & cache per-sample alternatively cut, addition, and edition
-            # totals.
-            if short_seq.designation_integer == DESIGNATION_ONE:
-                pass
-            elif short_seq.designation_integer == DESIGNATION_TWO:
-                self.per_sample_alt_cut_totals += short_seq.samples_counts
-            elif short_seq.designation_integer == DESIGNATION_THREE:
-                self.per_sample_addition_totals += short_seq.samples_counts
-            else:
-                self.per_sample_edition_totals += short_seq.samples_counts
-
-            ## New Code
-
-            # Calc per-sample seed_shifted, seed_edited, 3'
-            # supplementary edited, 3' modifcation, 3' untemplated addition,
+            # Calc per-sample seed_shifted, seed_edited, 3´
+            # supplementary edited, 3´ modification, 3´ untemplated addition,
             # and other edited totals.
 
             # For the %-columns, we skip bins not started by a designation one.
@@ -4314,28 +4234,22 @@ class Output(object):
             header.append('{}_hairpin_ambiguous?'.format(conf.general.species))
 
             # Samples
-            # i.e. sample, _norm, _alternatively_cut, _%added, _%edited
+            # i.e. sample, _norm, seed shifted, seed/3´suppl/other edited,
+            # 3´ alt_cut/mismatch
             for sample_name in samples.iterkeys():
                 header.append(sample_name)
             for sample_name in samples.iterkeys():
                 header.append("{}_norm".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%alternatively_cut".format(sample_name))
-            for sample_name in samples.iterkeys():
-                header.append("{}_%added".format(sample_name))
-            for sample_name in samples.iterkeys():
-                header.append("{}_%edited".format(sample_name))
-            for sample_name in samples.iterkeys():
                 header.append("{}_%seed_shifted".format(sample_name))
             for sample_name in samples.iterkeys():
                 header.append("{}_%seed_edited".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3'-supplementary_edited".format(sample_name))
-
+                header.append("{}_%3´-supplementary_edited".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3'-alternatively_cut".format(sample_name))
+                header.append("{}_%3´-alternatively_cut".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3'-mismatch".format(sample_name))
+                header.append("{}_%3´-mismatch".format(sample_name))
             for sample_name in samples.iterkeys():
                 header.append("{}_%other_edited".format(sample_name))
 
@@ -4417,17 +4331,14 @@ class Output(object):
                 row.append(str(bn.hairpin_ambig(short_seqs)))
 
                 # Samples
-                # i.e. sample, _norm, _alternatively_cut, _%added, _%edited
+                # i.e. sample, _norm, seed shifted, seed/3´suppl/other edited,
+                # 3´ alt_cut/mismatch
                 row += [str(i) for i in bn.per_sample_read_totals.counts()]
                 row += [str(i) for i in bn.per_sample_read_totals.norms()]
                 na = (starter_seq.designation_integer >= DESIGNATION_THREE)
-                row += [str(i) for i in bn.per_sample_perc_alternatively_cut(na)]
-                row += [str(i) for i in bn.per_sample_perc_addition(na)]
-                row += [str(i) for i in bn.per_sample_perc_edition(na)]
                 row += [str(i) for i in bn.per_sample_perc_seed_shifted(na)]
                 row += [str(i) for i in bn.per_sample_perc_seed_edited(na)]
                 row += [str(i) for i in bn.per_sample_perc_3p_supplementary_edited(na)]
-
                 row += [str(i) for i in bn.per_sample_perc_3p_alt_cut(na)]
                 row += [str(i) for i in bn.per_sample_perc_3p_mismatch(na)]
                 row += [str(i) for i in bn.per_sample_perc_other_edited(na)]
