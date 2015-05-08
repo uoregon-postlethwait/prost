@@ -113,6 +113,14 @@ To setup the git flow environment:
      
      # Clone our patched version of the git flow hooks repo into hooks.
      git clone https://github.com/jasonsydes/git-flow-hooks hooks
+     
+     # One small change: by default, releases should be "PATCH" level by
+     # default (e.g. v0.7.20 -> v0.7.21) just like hotfixes.  To do a "MINOR"
+     # "MAJOR" release, you can specify it manually.  See the section on 
+     # "Releases" below for more info. 
+     #
+     # To enable this, copy and rename the following file to the .git/ dir:
+     cp hooks/modules/git-flow-hooks-config.sh.dist git-flow-hooks-config.sh
 
      # cd back to the repo:
      cd ..
