@@ -6,22 +6,150 @@
 
 This page describes how to work with *Prost!* in a development environment.
 
-======================================
+=====
+Setup
+=====
+
+The setup will walk you through retrieving the code, setting up the git flow
+tools, and doing a sample commit.
+
 Grab the *Prost!* codebase from GitHub
-======================================
+--------------------------------------
 
 .. code-block:: bash
 
-    # via HTTPS
-    git clone https://github.com/uoregon-postlethwait/prost.git
-    # via SSH
-    git clone git@github.com:uoregon-postlethwait/prost.git
+   # Choose a repo and grab it:
+   # public repo via HTTPS
+   git clone https://github.com/uoregon-postlethwait/prost.git
+   # public repo via SSH
+   git clone git@github.com:uoregon-postlethwait/prost.git
+   # development repo via HTTPS
+   git clone https://github.com/uoregon-postlethwait/prost-dev.git
+   # development repo via SSH
+   git clone git@github.com:uoregon-postlethwait/prost-dev.git
 
-    # Enter the development directory.
-    cd prost
+   # Enter the development directory.
+   cd prost
 
-    # Checkout the branch you want to work on.
-    git checkout development
+   # Checkout the branch you want to work on.
+   git checkout develop
+
+Optional: Configure local *Prost!* repo for public and development repos
+------------------------------------------------------------------------
+
+Some *Prost!* development occurs on a private development GitHub repository
+(e.g. quick/dirty custom features for collaborators that aren't fit for public
+distribution). 
+
+Setup your local git repo to be able to push/pull from both the public GitHub
+*Prost!* repo and the private Github *Prost!* development repo like so.  Your
+initial ``.git/config`` should look like this:
+
+.. code-block:: ini
+   
+   [remote "origin"]
+        url = https://github.com/uoregon-postlethwait/prost-dev
+        fetch = +refs/heads/*:refs/remotes/origin/*
+   [branch "master"]
+        remote = origin
+        merge = refs/heads/master
+
+Change it to look like this:
+
+.. code-block:: ini
+   
+   [remote "private"]
+        url = https://github.com/uoregon-postlethwait/prost-dev
+        fetch = +refs/heads/*:refs/remotes/origin/*
+   [remote "public"]
+        url = https://github.com/uoregon-postlethwait/prost
+        fetch = +refs/heads/*:refs/remotes/origin/*
+   [branch "master"]
+        remote = private
+        merge = refs/heads/master
+
+Setup Git Flow (AVH) Tools
+--------------------------
+
+We follow the git flow model of development.  For background see:
+`Why Aren't You Using Git Flow? <http://jeffkreeftmeijer.com/2010/why-arent-you-using-git-flow/>`_.
+
+We use the AVH forked version of the git flow tools because the original git
+flow tools are no longer maintained, and AVH seems like the best replacement
+out there at the moment (it's maintained, and adds a few new features).  
+See https://github.com/petervanderdoes/gitflow.
+
+We use a mildly forked version of git flow hooks provided by 
+https://github.com/jaspernbrouwer/git-flow-hooks, which provides automatic
+version bumping for releases and hotfixes (and a few other small but nice
+features).  Our forked/patched version
+(see https://github.com/jasonsydes/git-flow-hooks) just adds the tiny feature
+of also updating ``prost/_version.py`` in addition to the standard updating of the
+``VERSION`` file.
+
+To setup the git flow environment:
+
+* Install git flow (the AVH version):
+  https://github.com/petervanderdoes/gitflow/wiki.  Use the defaults for all,
+  except for *versiontag*, for which you should specify 'v':
+
+  .. code-block:: bash
+     
+     Version tag prefix? [] v
+
+* Install our (very mildly) patched version of git-flow-hooks:
+
+  .. code-block:: bash
+
+     # cd to your checkout of the prost repository 
+     cd /path/to/prost-repo
+     
+     # cd into the .git directory
+     cd .git
+     
+     # Rename the hooks directory to something else.  The default git hooks
+     # directory just has some examples in it.  Safe to rename, or even delete.
+     mv hooks hooks.orig
+     
+     # Clone our patched version of the git flow hooks repo into hooks.
+     git clone https://github.com/jasonsydes/git-flow-hooks hooks
+
+     # cd back to the repo:
+     cd ..
+
+HotFix
+------
+
+Hotfixes are tiny fixes to an existing release.  The hotfix may optionally be
+pushed to the public repo as well. Do the following:
+
+.. code-block:: bash
+
+   # Start a hotfix 
+   git flow hotfix start
+   # Make your changes to the code (i.e. implement the hotfix).
+   vim thecode.py
+   # Add and commit the code.
+   git add thecode.py
+   git ci -m 'Made these changes...'
+   # Finish the hotfix
+   git flow hotfix finish -m
+   # Push everything to private repository
+   git push private --mirror
+   # Optional: If this is to be a public release, push just the master repo and
+   #    the tag just created to the public repo.
+   git push public master
+   git push public v0.7.17
+   
+Release
+-------
+
+TODO: Add instructions on performing a release with git flow.
+
+Feature
+-------
+
+TODO: Add instructions on working on large new features with git flow.
 
 ========================================================================
 Running *Prost!* from within the development directory (not recommended)
@@ -191,22 +319,20 @@ Working with *Prost!* Documentation
 *Prost!* documentation is quickly accessible locally under the *doc/*
 directory.
 
-""""""""""""""""""
 To build the docs:
-""""""""""""""""""
+------------------
 
 .. code-block:: bash
 
-    cd prost/doc
-    make html
+   cd prost/doc
+   make html
 
-    # Alternatively
-    cd prost
-    ./build.sh
+   # Alternatively
+   cd prost
+   ./build.sh
 
-"""""""""""""""""
 To read the docs:
-"""""""""""""""""
+-----------------
 
 Currently, the docs aren't perfectly intertwined.  Eventually, we'll have them
 all linked to one another.  For now, you can access the individual pages.  Just
@@ -214,12 +340,13 @@ look for the \*.html pages.  For example, to view this document locally on OS X:
 
 .. code-block:: bash
 
-    cd prost/doc
-    open _build/html/development.html
+   cd prost/doc
+   open _build/html/development.html
 
-"""""""""""""""""
+However, see also :ref:`sphinx_autobuild` below for an easier method.
+
 To edit the docs:
-"""""""""""""""""
+-----------------
 
 The docs are written in Sphinx's reStructuredText.  See
 http://sphinx-doc.org/rest.html for a nice tutorial.  The docs try to follow
@@ -235,4 +362,34 @@ Simply find the \*.rst document under the *doc/* directory that you wish to
 edit, edit it, rebuild the docs, and view the result locally in your browser.
 
 For a new document, I usually start by copying an existing \*.rst document and
-modifiy it.
+modify it.
+
+.. _sphinx_autobuild:
+
+Using sphinx-autobuild to develop the docs:
+-------------------------------------------
+
+`Sphinx Autobuild <https://github.com/GaretJax/sphinx-autobuild>`_ is a nice
+tool that runs in the background, automatically builds the docs when you save a
+change, and serves the docs on a local server to your web browser at
+http://127.0.0.1:8000. 
+
+To install:
+
+.. code-block:: bash
+   
+   pip install sphinx-autobuild
+
+To use:
+
+.. code-block:: bash
+   
+   # Easy
+   cd docs
+   make livehtml
+   
+   # If 'Easy' doesnt' work:
+   cd /path/to/toplevel/repo
+   sphinx-autobuild docs docs/_build/html/
+
+To view, point your browser to http://127.0.0.1:8000.
