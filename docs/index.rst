@@ -14,21 +14,34 @@ then "binned" together based on genomic location.  Each bin is then annotated
 with miRBase mature sequences and hairpins, as well as other types of RNA
 obtained from Ensembl's Biomart.
 
-Contents
-========
+Site Contents
+=============
+
+In addition to this home page, there are several other pages on this site as
+well. Click on the *Site* link in the header to access those pages.  Here is an
+overview of the content of the other pages.
 
 .. toctree::
    :maxdepth: 2
 
-   index
    demo
    bbmap
    biomart
+
+..
+  Add a hidden table of contents that includes the development page, so
+  that the 'Site' link in the header includes the Development page.  We don't
+  wish to include it in the Site Contents as well.
+
+.. toctree::
+   :hidden: 
    
+   development
+
 .. _prost_installation:
 
-Installation of Prost
-=====================
+Installation of *Prost!*
+========================
 
 Installation via pip is probably the easiest way to get *Prost!* installed::
 
