@@ -210,7 +210,7 @@ def to_wiggle_fingerprints(gen_locs, max_seq_len):
     1. The starting basepair of the first genomic location.
     2. A sorted tuple of all the linkage groups of the genomic locations.
     3. A tuple of the strands on which the genomic locations are found (i.e.
-        either 5´->3´ or 3´->5´).
+        either 5'->3' or 3'->5').
 
     The 2nd and 3rd subfingerprint above are identical between the two
     fingerprints, while the 1st subfingerprint above differs.
@@ -285,7 +285,7 @@ def to_wiggle_fingerprints(gen_locs, max_seq_len):
     # Linkage group fingerprint
     lg_fingerprint = tuple(gl.lg for gl in gen_locs)
 
-    # Strand fingerprint ('1' means 5´->3´, '-1' means 3´->5´)
+    # Strand fingerprint ('1' means 5'->3', '-1' means 3'->5')
     strand_fingerprint = \
             tuple(sorted(((1 if (gl.start - gl.end < 0) else -1) for gl in gen_locs)))
 
@@ -1155,10 +1155,10 @@ class ShortSeq(SlotPickleMixin):
 
     @property
     def three_prime_supplementary(self):
-        """The 3´-supplementary region of this ShortSeq.
+        """The 3'-supplementary region of this ShortSeq.
 
         Returns:
-            str: The 4 nucleotide 3´-supplementary region (nts 13-16).
+            str: The 4 nucleotide 3'-supplementary region (nts 13-16).
 
         """
         return self.seq_str[12:16]
@@ -3343,8 +3343,8 @@ class GenLocBin(Bin):
             # Calc & cache per-sample read count totals across this Bin
             self.per_sample_read_totals += short_seq.samples_counts
 
-            # Calc per-sample seed_shifted, seed_edited, 3´
-            # supplementary edited, 3´ modification, 3´ untemplated addition,
+            # Calc per-sample seed_shifted, seed_edited, 3'
+            # supplementary edited, 3' modification, 3' untemplated addition,
             # and other edited totals.
 
             # For the %-columns, we skip bins not started by a designation one.
@@ -4234,8 +4234,8 @@ class Output(object):
             header.append('{}_hairpin_ambiguous?'.format(conf.general.species))
 
             # Samples
-            # i.e. sample, _norm, seed shifted, seed/3´suppl/other edited,
-            # 3´ alt_cut/mismatch
+            # i.e. sample, _norm, seed shifted, seed/3'suppl/other edited,
+            # 3' alt_cut/mismatch
             for sample_name in samples.iterkeys():
                 header.append(sample_name)
             for sample_name in samples.iterkeys():
@@ -4245,11 +4245,11 @@ class Output(object):
             for sample_name in samples.iterkeys():
                 header.append("{}_%seed_edited".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3´-supplementary_edited".format(sample_name))
+                header.append("{}_%3'-supplementary_edited".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3´-alternatively_cut".format(sample_name))
+                header.append("{}_%3'-alternatively_cut".format(sample_name))
             for sample_name in samples.iterkeys():
-                header.append("{}_%3´-mismatch".format(sample_name))
+                header.append("{}_%3'-mismatch".format(sample_name))
             for sample_name in samples.iterkeys():
                 header.append("{}_%other_edited".format(sample_name))
 
@@ -4331,8 +4331,8 @@ class Output(object):
                 row.append(str(bn.hairpin_ambig(short_seqs)))
 
                 # Samples
-                # i.e. sample, _norm, seed shifted, seed/3´suppl/other edited,
-                # 3´ alt_cut/mismatch
+                # i.e. sample, _norm, seed shifted, seed/3'suppl/other edited,
+                # 3' alt_cut/mismatch
                 row += [str(i) for i in bn.per_sample_read_totals.counts()]
                 row += [str(i) for i in bn.per_sample_read_totals.norms()]
                 na = (starter_seq.designation_integer >= DESIGNATION_THREE)
