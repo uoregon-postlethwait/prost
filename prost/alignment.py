@@ -708,13 +708,13 @@ class AlignmentExecutionHit(SlotPickleMixin):
 
     @abstractproperty
     def has_5p_mismatch(self):
-        """Does the query (i.e. short) sequence have a mismatch on its 5´ end
+        """Does the query (i.e. short) sequence have a mismatch on its 5' end
         from the reference sequence?"""
         pass
 
     @abstractproperty
     def has_3p_mismatch(self):
-        """Does the query (i.e. short) sequence have a mismatch on its 3´ end
+        """Does the query (i.e. short) sequence have a mismatch on its 3' end
         from the reference sequence?"""
         pass
 
@@ -929,13 +929,13 @@ class AlignmentExecutionHit(SlotPickleMixin):
                 and self.start < self.end
                 and other.start <= self.start
                 and other.end >= self.end):
-            # other 5´->3´, self is contained entirely within other
+            # other 5'->3', self is contained entirely within other
             within = True
         elif(other.start > other.end
                 and self.start > self.end
                 and other.start >= self.start
                 and other.end <= self.end):
-            # other 3´->5´, self is contained entirely within other
+            # other 3'->5', self is contained entirely within other
             within = True
 
         return within
@@ -1119,13 +1119,13 @@ class SamAlignmentExecutionHit(AlignmentExecutionHit):
         start = None
         tokens = self.cigar_tokens
         if self.on_minus_strand:
-            # Go in at most two tokens to find only 5´ clipped nts
+            # Go in at most two tokens to find only 5' clipped nts
             clipped_5p_H = tokens[-1][0] if tokens[-1][1] == 'H' else 0
             idx_S = -1 if clipped_5p_H == 0 else -2
             clipped_5p_S = tokens[idx_S][0] if tokens[idx_S][1] == 'S' else 0
             clipped_5p_nts = clipped_5p_H + clipped_5p_S
         else:
-            # Go in at most two tokens to find only 5´ clipped nts
+            # Go in at most two tokens to find only 5' clipped nts
             clipped_5p_H = tokens[0][0] if tokens[0][1] == 'H' else 0
             idx_S = 0 if clipped_5p_H == 0 else 1
             clipped_5p_S = tokens[idx_S][0] if tokens[idx_S][1] == 'S' else 0
