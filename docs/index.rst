@@ -25,6 +25,7 @@ overview of the content of the other pages.
    :maxdepth: 2
 
    demo
+   output
    bbmap
    biomart
 
@@ -160,6 +161,12 @@ The following databases are required by *Prost*!:
     species under study. See :doc:`biomart`.  Following those instructions will
     produce correctly formatted FASTA files (the FASTA header format is:
     ``>geneName|biotype|geneID``).
+
+
+*Prost!* Output
+```````````````
+
+See :doc:`output` for a description of the output of *Prost!*.
 
 .. _command_line_help:
 
