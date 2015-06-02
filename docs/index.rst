@@ -14,6 +14,14 @@ then "binned" together based on genomic location.  Each bin is then annotated
 with miRBase mature sequences and hairpins, as well as other types of RNA
 obtained from Ensembl's Biomart.
 
+News
+====
+
+**June 2nd, 2015**: A 
+`FLOSS <http://http://www.gnu.org/philosophy/floss-and-foss.en.html>`_
+license will be available soon for academic/personal use of *Prost!*.  We're
+working with University of Oregon to get this up soon.
+
 Site Contents
 =============
 
@@ -97,8 +105,6 @@ all that is required to *Prost!*.
 
 Listed below are the various requirements that need to be fulfilled in order to
 run *Prost!*.
-
-Hello
 
 .. _system_and_software_dependencies: 
 
