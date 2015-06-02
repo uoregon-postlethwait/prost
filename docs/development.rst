@@ -159,6 +159,42 @@ Feature
 
 TODO: Add instructions on working on large new features with git flow.
 
+Publish on PyPI
+---------------
+
+Once you've published github, you need to publish to PyPI as well (so that
+people can do ``pip install prost``).  Setup the following ``~/.pypirc``:
+
+.. code-block:: ini
+   
+   bash
+   [distutils] # this tells distutils what package indexes you can push to
+   index-servers =
+       pypi
+       pypitest
+
+   [pypi]
+   repository: https://pypi.python.org/pypi
+   username: jasonsydes
+   password: the_password_for_our_pypi_account
+
+   [pypitest]
+   repository: https://testpypi.python.org/pypi
+   username: jasonsydes
+   password: the_password_for_our_pypi_account
+
+Once you've got that, you can upload to PyPI:
+
+.. code-block:: bash
+
+   # Optional: Upload to the test PyPI server (regularly cleaned out).
+   python setup.py sdist upload -r pypitest
+   # Confirm it worked at this URL: https://testpypi.python.org/pypi/prost
+
+   # Upload to the PyPI server (confirm at 
+   # https://pypi.python.org/pypi/prost).
+   python setup.py sdist upload -r pypi
+
 ========================================================================
 Running *Prost!* from within the development directory (not recommended)
 ========================================================================
