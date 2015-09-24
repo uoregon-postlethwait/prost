@@ -54,6 +54,9 @@ DEFAULT_MAX_THREADS =                                                     4
 # Default maximum number of locations to report
 DEFAULT_MAX_LOCATIONS_TO_REPORT =                                        20
 
+# Default maximum number of locations allowed per sequence
+DEFAULT_MAX_LOCATIONS_ALLOWED =                                          40
+
 # The size of buckets (in nucleotides) for mirror-miR detection, and the amount
 # of overlap (in nucleotides) for a mirror-miR.  Note that if you're using
 # negative overlap, you'll want the bucket length to be some X times larger than
@@ -206,6 +209,7 @@ CONFIG_FILE_INT_FIELDS =                       ['max_3p_mismatches',
                                                 'max_seq_length',
                                                 'max_threads',
                                                 'max_locations_to_report',
+                                                'max_locations_allowed',
                                                 'wiggle']
 # Configuration fields that should be non-negative
 CONFIGURATION_NON_NEGATIVE_FIELDS =            ['max_3p_mismatches',
@@ -218,7 +222,8 @@ CONFIGURATION_POSITIVE_FIELDS =                ['indelnt_penalty_multiplier',
                                                 'min_seq_length',
                                                 'max_seq_length',
                                                 'max_threads',
-                                                'max_locations_to_report']
+                                                'max_locations_to_report',
+                                                'max_locations_allowed']
 
 
 # BBMap default parameters

@@ -598,7 +598,7 @@ class Configuration(object):
                 required = False)
 
         self._argparser.add_argument('--max-locations-to-report',
-                help = """The maximum number of genetic locations to report per
+                help = """The maximum number of genomic locations to report per
                 sequence (if exceeded, it is simply reported as TML (too many
                 locations) (default: %(default)s).""",
                 metavar = 'NUM',
@@ -606,6 +606,22 @@ class Configuration(object):
                 action = 'store',
                 dest = 'max_locations_to_report',
                 default = DEFAULT_MAX_LOCATIONS_TO_REPORT,
+                required = False)
+
+        self._argparser.add_argument('--max-locations-allowed',
+                help = """The maximum number of genomic locations allowed per
+                sequence.  If exceeded for a given sequence, only the number of
+                genomic locations is preserved, while the actual locations are
+                erased, and the sequence is not binned (i.e. it is only
+                included in the isomiRs or no_genomic_hits tab).  Reported as
+                "MAL" (maximum allowed locations).  This may help reduce Prost!
+                memory consumption in some data sets.
+                (default: %(default)s).""",
+                metavar = 'NUM',
+                type = int,
+                action = 'store',
+                dest = 'max_locations_allowed',
+                default = DEFAULT_MAX_LOCATIONS_ALLOWED,
                 required = False)
 
         self._argparser.add_argument('-C','--cache',
@@ -1040,6 +1056,14 @@ class Configuration(object):
             raise ConfigurationException, \
                 ("min_seq_length must be less than max_seq_length.")
 
+        # 2. max_locations_allowed must be >= max_locations_to_report
+        if (self.general.max_locations_to_report >
+                    self.general.max_locations_allowed):
+            raise ConfigurationException, \
+                ("max_locations_to_report cannot be greater than "
+                 "max_locations_allowed.")
+
+
 ###############
 ### Classes ###
 ###############
@@ -1082,6 +1106,17 @@ class ShortSeq(SlotPickleMixin):
         ambiguous (bool): Sequences are defined as 'ambiguous' if they are
             within_wiggle of more than one GenLocBin bin_starter.
         cached (bool): Whether or not this ShortSeq has been cached in the DB.
+        count_genomic_locations (int): The number of genomic locations.
+            Recorded in case it exceeds max_locations_allowed (in that case,
+            genomic_locations[] is emptied, so this field is our record of the
+            actual number of locations.)
+        count_no_hit_genomic_locations (int): The number of "no_hit" genomic
+            locations (see Arg 'no_hit_genomic_locations' below). Recorded in
+            case it exceeds max_locations_allowed (in that case,
+            no_hit_genomic_locations[] is emptied, so this field is our record
+            of the actual number of locations.)
+        max_locations_allowed_exceeded (bool): True it the number of genomic
+            locations for this ShortSeq exceeds max_locations_allowed.
         samples_counts (SampleCountsWithNorms): An object representing the
             read counts for this ShortSeq across samples.  Also holds the
             normalized read counts for this ShortSeq across samples.
@@ -1093,8 +1128,8 @@ class ShortSeq(SlotPickleMixin):
             as the representation of a short sequence's Genomic Location; in
             this context, the AlignmentExecutionHit's reference name, start, and
             stop represent the Genomic Location of the short sequence.
-        no_hit_genomic_locations ([AlignmentExecutionHit]): A list of genomic locations
-            at which this ShortSeq is found but for which Prost has
+        no_hit_genomic_locations ([AlignmentExecutionHit]): A list of genomic
+            locations at which this ShortSeq is found but for which Prost has
             post-filtered out (e.g. for having too many 3p mismatches).
         annotations ([Annotations]): The list of annotations for this ShortSeq.
 
@@ -1105,18 +1140,21 @@ class ShortSeq(SlotPickleMixin):
             '_sum_norm',
             'ambiguous',
             'cached',
+            'count_genomic_locations',
+            'count_no_hit_genomic_locations',
+            'max_locations_allowed_exceeded',
             'samples_counts',
             'genomic_locations',
             'no_hit_genomic_locations',
             'wiggle_fingerprints',
             'annotations',
-            'memo_seed_shifted',
-            'memo_seed_edited',
-            'memo_3p_supplementary_edited',
-            'memo_3p_modifications',
-            'memo_3p_untemplated_addition',
-            'memo_5p_untemplated_or_edited',
-            'memo_other_edited',
+            #'memo_seed_shifted',
+            #'memo_seed_edited',
+            #'memo_3p_supplementary_edited',
+            #'memo_3p_modifications',
+            #'memo_3p_untemplated_addition',
+            #'memo_5p_untemplated_or_edited',
+            #'memo_other_edited',
     )
 
     @property
@@ -1169,6 +1207,9 @@ class ShortSeq(SlotPickleMixin):
         self.cached = False
         self.designation_integer = None
         self.ambiguous = None
+        self.count_genomic_locations = None
+        self.count_no_hit_genomic_locations = None
+        self.max_locations_allowed_exceeded = False
         self.wiggle_fingerprints = None
         self.samples_counts = SamplesCountsWithNorms(num_samples)
         self.genomic_locations = []
@@ -1529,8 +1570,8 @@ class ShortSeqs(dict):
         progress.done()
 
 
-    def designate_sequence(self, seq_str, designation_integer, gen_locs=None,
-            no_hit_gen_locs=None):
+    def designate_sequence(self, seq_str, designation_integer,
+            max_locations_allowed=None, gen_locs=None, no_hit_gen_locs=None):
         """Bookkeeping to add the designation and genomic locations of short
         sequence 'seq_str' to the ShortSeqs and appropriate ShortSeq
         objects.
@@ -1548,6 +1589,10 @@ class ShortSeqs(dict):
             seq_str (str): The short sequence to be designated and updated.
             designation_integer (int): The integer part of the designation
                 of this short sequence (i.e. left of the decimal).
+            max_locations_allowed (int): Optional - The maximum number of
+                genomic locations allowed per sequence.  If exceeded, all
+                genomic locations are erased for that sequence (count is still
+                preserved).
             gen_locs ([GenomicLocation]): Optional - Locations on genome that
                 both a) aligned to the sequence and b) have the designation
                 'designation'.  This criteria means that some alignment hits
@@ -1561,27 +1606,45 @@ class ShortSeqs(dict):
         assert isinstance(designation_integer, int)
 
         if no_hit_gen_locs:
-            # This is the only place that we sort no_hit genomic locations.
-            short_seq.no_hit_genomic_locations[:] = sorted(no_hit_gen_locs)
+            # Record number of no_hit_gen_locs:
+            short_seq.count_no_hit_genomic_locations = len(no_hit_gen_locs)
+
+            if len(no_hit_gen_locs) > max_locations_allowed:
+                # Too many locations to save, toss them all to save memory.
+                short_seq.no_hit_genomic_locations[:] = []
+            else:
+                # This is the only place that we sort no_hit genomic locations.
+                short_seq.no_hit_genomic_locations[:] = sorted(no_hit_gen_locs)
 
         if gen_locs:
             # We are only setting gen_locs once for each sequence, right?
             assert len(short_seq.genomic_locations) == 0
-            # Reallocating list in some cases here is wee bit inefficient.
-            # This is the only place that we sort genomic locations.
-            short_seq.genomic_locations[:] = sorted(gen_locs)
 
-            # update wiggle_fingerprint_bins
-            (fp_low, fp_high) = \
-                    short_seq.set_wiggle_fingerprints(self._conf['max_seq_length'])
+            # Record number of gen_locs:
+            short_seq.count_genomic_locations = len(gen_locs)
 
-            self._wiggle_fingerprint_bins_low[fp_low] = \
-                    self._wiggle_fingerprint_bins_low.get(fp_low, set())
-            self._wiggle_fingerprint_bins_low[fp_low].add(short_seq)
+            if len(gen_locs) > max_locations_allowed:
+                # Too many locations to save, toss them all to save memory.
+                short_seq.genomic_locations[:] = []
+                # Note it:
+                short_seq.max_locations_allowed_exceeded = True
+            else:
+                # Reallocating list in some cases here is wee bit inefficient.
+                # This is the only place that we sort no_hit genomic locations.
+                short_seq.genomic_locations[:] = sorted(gen_locs)
 
-            self._wiggle_fingerprint_bins_high[fp_high] = \
-                    self._wiggle_fingerprint_bins_high.get(fp_high, set())
-            self._wiggle_fingerprint_bins_high[fp_high].add(short_seq)
+                # update wiggle_fingerprint_bins
+                (fp_low, fp_high) = \
+                        short_seq.set_wiggle_fingerprints(
+                                self._conf['max_seq_length'])
+
+                self._wiggle_fingerprint_bins_low[fp_low] = \
+                        self._wiggle_fingerprint_bins_low.get(fp_low, set())
+                self._wiggle_fingerprint_bins_low[fp_low].add(short_seq)
+
+                self._wiggle_fingerprint_bins_high[fp_high] = \
+                        self._wiggle_fingerprint_bins_high.get(fp_high, set())
+                self._wiggle_fingerprint_bins_high[fp_high].add(short_seq)
 
         # Set the designation_integer, which may be '12' (i.e. one or two).
         short_seq.designation_integer = designation_integer
@@ -1737,7 +1800,7 @@ class ShortSeqs(dict):
                 return True
         return False
 
-    def designation_step_one(self, alignment):
+    def designation_step_one(self, alignment, max_locations_allowed):
         """Designates each ShortSeq object as either 3 or above, or "1_or_2",
         or "no_hit".
 
@@ -1754,6 +1817,10 @@ class ShortSeqs(dict):
 
         Args:
             alignment (GenomeAlignment): A GenomeAlignment object.
+            max_locations_allowed (int): Optional - The maximum number of
+                genomic locations allowed per sequence.  If exceeded, all
+                genomic locations are erased for that sequence (count is still
+                preserved).
 
         """
         progress = Progress("Designation step ONE")
@@ -1779,12 +1846,13 @@ class ShortSeqs(dict):
                     continue
                 self.designate_genome_alignment_hit_set(hit_set,
                         alignment.alignment_execution.max_non_3p_mismatches,
-                        alignment.alignment_execution.indelnt_penalty_multiplier)
+                        alignment.alignment_execution.indelnt_penalty_multiplier,
+                        max_locations_allowed)
 
         progress.done()
 
     def designate_genome_alignment_hit_set(self, hit_set, max_non_3p_mismatches,
-            indelnt_penalty_multiplier):
+            indelnt_penalty_multiplier, max_locations_allowed):
         """Designate all hits within a hit_set.
 
         A hit_set is a set of alignment hits of a single sequence against
@@ -1811,6 +1879,10 @@ class ShortSeqs(dict):
             max_non_3p_mismatches (int): The maximum number of non 3p mismatches
                 allowed per alignment.
             indelnt_penalty_multiplier (int): As it sounds.
+            max_locations_allowed (int): Optional - The maximum number of
+                genomic locations allowed per sequence.  If exceeded, all
+                genomic locations are erased for that sequence (count is still
+                preserved).
 
         """
         query_sequence = hit_set[0].query_sequence
@@ -1908,16 +1980,16 @@ class ShortSeqs(dict):
             # truly not hitting to the genome.  Store any of the
             # prost-post-filtered hits to each short_seqs "no_hit_gen_locs".
             # Designate as a "no_hit".
-            self.designate_sequence(query_sequence, DESIGNATION_NO_HIT, None,
-                    no_hit_gen_locs)
+            self.designate_sequence(query_sequence, DESIGNATION_NO_HIT,
+                    max_locations_allowed, None, no_hit_gen_locs)
         elif gen_locs[0].designation is None:
             # Designation: 1 or 2 (for all members of gen_locs[]).
             self.designate_sequence(query_sequence, DESIGNATION_ONE_OR_TWO,
-                    gen_locs)
+                    max_locations_allowed, gen_locs)
         else:
             # Designation: 3 or greater (for all members of gen_locs[]).
             self.designate_sequence(query_sequence, lowest_designation,
-                    gen_locs)
+                    max_locations_allowed, gen_locs)
 
     def normalize(self):
         """Normalize per-sample counts for each ShortSeq.
@@ -2673,6 +2745,10 @@ class GenLocBins(Bins):
 
             if short_seq.is_no_hit:
                 # Stat: DESIGNATION_NO_HIT, do not bin
+                continue
+
+            if short_seq.max_locations_allowed_exceeded:
+                # Stat: Too many locations to store, do not bin
                 continue
 
             self._debug_seq_attempted_binned_count += 1
@@ -3946,6 +4022,11 @@ class Output(object):
             ### Data ###
 
             rows = []
+
+            # abbreviations for readability
+            max_locs_allowed = conf.general.max_locations_allowed
+            max_locs_to_report = conf.general.max_locations_to_report
+
             for short_seq in short_seqs.itervalues():
                 progress.progress()
 
@@ -3961,7 +4042,9 @@ class Output(object):
 
                 # Bin indexes
                 if gen_loc_bin is None:
-                    assert (short_seq.ambiguous or short_seq.is_no_hit)
+                    assert (short_seq.ambiguous
+                            or short_seq.is_no_hit
+                            or short_seq.max_locations_allowed_exceeded)
                     row.append("")
                 else:
                     row.append(gen_loc_bin.idx)
@@ -3977,8 +4060,11 @@ class Output(object):
 
                 # Locations
                 gen_locs = short_seq.genomic_locations
-                if len(gen_locs) > conf.general.max_locations_to_report:
-                    row.append("TML:{}".format(len(gen_locs)))
+                count_gen_locs = short_seq.count_genomic_locations
+                if count_gen_locs > max_locs_allowed:
+                    row.append("MAL:{}".format(count_gen_locs))
+                elif count_gen_locs > max_locs_to_report:
+                    row.append("TML:{}".format(count_gen_locs))
                 else:
                     locs = []
                     for loc in gen_locs:
@@ -3986,8 +4072,10 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Cigar strings
-                if len(gen_locs) > conf.general.max_locations_to_report:
-                    row.append("TML:{}".format(len(gen_locs)))
+                if count_gen_locs > max_locs_allowed:
+                    row.append("MAL:{}".format(count_gen_locs))
+                elif count_gen_locs > max_locs_to_report:
+                    row.append("TML:{}".format(count_gen_locs))
                 else:
                     locs = []
                     for loc in gen_locs:
@@ -3995,7 +4083,8 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Designations
-                if (len(gen_locs) > conf.general.max_locations_to_report
+                if ((count_gen_locs > max_locs_allowed)
+                        or (count_gen_locs > max_locs_to_report)
                         or short_seq.designation_integer < 3
                         or short_seq.is_no_hit):
                     # report just the designation int for 1's, 2's, and TMLs
@@ -4009,7 +4098,8 @@ class Output(object):
                 if short_seq.ambiguous:
                     row.append('ambiguous: {}'.format(
                         ','.join(short_seq.ambiguous)))
-                elif short_seq.is_no_hit:
+                elif (short_seq.is_no_hit
+                        or short_seq.max_locations_allowed_exceeded):
                     row.append("")
                 else:
                     row.append(gen_loc_bin.main_short_seq_str)
@@ -4108,6 +4198,11 @@ class Output(object):
             ### Data ###
 
             rows = []
+
+            # abbreviations for readability
+            max_locs_allowed = conf.general.max_locations_allowed
+            max_locs_to_report = conf.general.max_locations_to_report
+
             for short_seq in short_seqs.itervalues():
                 progress.progress()
 
@@ -4150,9 +4245,13 @@ class Output(object):
 
                 # Prost-post-filtered-out Locations
                 no_hit_gen_locs = short_seq.no_hit_genomic_locations
-                if len(no_hit_gen_locs) > conf.general.max_locations_to_report:
-                    row.append("TML:{}".format(len(no_hit_gen_locs)))
-                elif len(no_hit_gen_locs) == 0:
+                count_no_hit_gen_locs = short_seq.count_no_hit_genomic_locations
+
+                if count_no_hit_gen_locs > max_locs_allowed:
+                    row.append("MAL:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs > max_locs_to_report:
+                    row.append("TML:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs == 0:
                     # no "no_hit" locations...
                     row.append("")
                 else:
@@ -4162,9 +4261,11 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Cigar strings for those locations
-                if len(no_hit_gen_locs) > conf.general.max_locations_to_report:
-                    row.append("TML:{}".format(len(no_hit_gen_locs)))
-                elif len(no_hit_gen_locs) == 0:
+                if count_no_hit_gen_locs > max_locs_allowed:
+                    row.append("MAL:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs > max_locs_to_report:
+                    row.append("TML:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs == 0:
                     # no "no_hit" locations...
                     row.append("")
                 else:
@@ -4887,7 +4988,8 @@ def main():
 
     with file_caching(_conf, 5, _short_seqs) as cached_objs:
         if not cached_objs:
-            _short_seqs.designation_step_one(_alignments.genome_alignment)
+            _short_seqs.designation_step_one(_alignments.genome_alignment,
+                    _conf.general.max_locations_allowed)
             _short_seqs.normalize()
         else:
             _short_seqs = cached_objs[0]
