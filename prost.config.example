@@ -27,9 +27,17 @@ species: mmu
 # The maximum genetic wiggle.
 # wiggle: 5
 
-# The maximum number of genetic locations to report per sequence (if exceeded,
+# The maximum number of genomic locations to report per sequence (if exceeded,
 # it is simply reported as TML (too many locations).
 # max_locations_to_report: 20
+
+# The maximum number of genomic locations allowed per sequence.  If exceeded
+# for a given sequence, only the number of genomic locations is preserved,
+# while the actual locations are erased, and the sequence is not binned (i.e.
+# it is only included in the isomiRs or no_genomic_hits tab).  Reported as
+# "MAL" (maximum allowed locations).  This may help reduce Prost! memory
+# consumption in some data sets.
+# max_locations_allowed: 40
 
 # Skip all sequence alignments.
 # skip_sequence_alignments: no
