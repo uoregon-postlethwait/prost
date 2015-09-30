@@ -614,8 +614,8 @@ class Configuration(object):
                 genomic locations is preserved, while the actual locations are
                 erased, and the sequence is not binned (i.e. it is only
                 included in the isomiRs or no_genomic_hits tab).  Reported as
-                "MAL" (maximum allowed locations).  This may help reduce Prost!
-                memory consumption in some data sets.
+                "MLAE" (maximum locations allowed exceeded).  This may help
+                reduce Prost! memory consumption in some data sets.
                 (default: %(default)s).""",
                 metavar = 'NUM',
                 type = int,
@@ -1628,6 +1628,9 @@ class ShortSeqs(dict):
                 short_seq.genomic_locations[:] = []
                 # Note it:
                 short_seq.max_locations_allowed_exceeded = True
+                # Reset designation appropriately
+                designation_integer = \
+                        DESIGNATION_MAX_LOCATIONS_ALLOWED_EXCEEDED
             else:
                 # Reallocating list in some cases here is wee bit inefficient.
                 # This is the only place that we sort no_hit genomic locations.
@@ -4024,7 +4027,6 @@ class Output(object):
             rows = []
 
             # abbreviations for readability
-            max_locs_allowed = conf.general.max_locations_allowed
             max_locs_to_report = conf.general.max_locations_to_report
 
             for short_seq in short_seqs.itervalues():
@@ -4061,8 +4063,8 @@ class Output(object):
                 # Locations
                 gen_locs = short_seq.genomic_locations
                 count_gen_locs = short_seq.count_genomic_locations
-                if count_gen_locs > max_locs_allowed:
-                    row.append("MAL:{}".format(count_gen_locs))
+                if short_seq.max_locations_allowed_exceeded:
+                    row.append("MLAE:{}".format(count_gen_locs))
                 elif count_gen_locs > max_locs_to_report:
                     row.append("TML:{}".format(count_gen_locs))
                 else:
@@ -4072,8 +4074,8 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Cigar strings
-                if count_gen_locs > max_locs_allowed:
-                    row.append("MAL:{}".format(count_gen_locs))
+                if short_seq.max_locations_allowed_exceeded:
+                    row.append("MLAE:{}".format(count_gen_locs))
                 elif count_gen_locs > max_locs_to_report:
                     row.append("TML:{}".format(count_gen_locs))
                 else:
@@ -4083,8 +4085,10 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Designations
-                if ((count_gen_locs > max_locs_allowed)
-                        or (count_gen_locs > max_locs_to_report)
+                if short_seq.max_locations_allowed_exceeded:
+                    # report 'MLAE'
+                    desig = "MLAE"
+                elif ((count_gen_locs > max_locs_to_report)
                         or short_seq.designation_integer < 3
                         or short_seq.is_no_hit):
                     # report just the designation int for 1's, 2's, and TMLs
@@ -4248,7 +4252,7 @@ class Output(object):
                 count_no_hit_gen_locs = short_seq.count_no_hit_genomic_locations
 
                 if count_no_hit_gen_locs > max_locs_allowed:
-                    row.append("MAL:{}".format(count_no_hit_gen_locs))
+                    row.append("MLAE:{}".format(count_no_hit_gen_locs))
                 elif count_no_hit_gen_locs > max_locs_to_report:
                     row.append("TML:{}".format(count_no_hit_gen_locs))
                 elif count_no_hit_gen_locs == 0:
@@ -4262,7 +4266,7 @@ class Output(object):
 
                 # Cigar strings for those locations
                 if count_no_hit_gen_locs > max_locs_allowed:
-                    row.append("MAL:{}".format(count_no_hit_gen_locs))
+                    row.append("MLAE:{}".format(count_no_hit_gen_locs))
                 elif count_no_hit_gen_locs > max_locs_to_report:
                     row.append("TML:{}".format(count_no_hit_gen_locs))
                 elif count_no_hit_gen_locs == 0:

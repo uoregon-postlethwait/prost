@@ -35,8 +35,8 @@ species: mmu
 # for a given sequence, only the number of genomic locations is preserved,
 # while the actual locations are erased, and the sequence is not binned (i.e.
 # it is only included in the isomiRs or no_genomic_hits tab).  Reported as
-# "MAL" (maximum allowed locations).  This may help reduce Prost! memory
-# consumption in some data sets.
+# "MLAE" (maximum locations allowed exceeded).  This may help reduce Prost!
+# memory consumption in some data sets.
 # max_locations_allowed: 40
 
 # Skip all sequence alignments.
