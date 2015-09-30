@@ -113,6 +113,10 @@ DESIGNATION_THREE =                                                       3
 # A magic number representing a sequence designation of either 'one' or 'two'.
 DESIGNATION_ONE_OR_TWO =                                                -12
 
+# A magic number representing a sequence designation for sequences that have
+# exceeded max_locations_allowed.
+DESIGNATION_MAX_LOCATIONS_ALLOWED_EXCEEDED =                             98
+
 # A magic number representing a sequence designation of 'no hits in genome db'.
 DESIGNATION_NO_HIT =                                                     99
 
