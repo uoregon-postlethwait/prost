@@ -353,7 +353,7 @@ class AlignmentExecution(object):
             results_file = conf_alignment['results_file']
         except KeyError:
             # results_file wasn't specified. Set to default.
-            results_file = "alignment_results_{}_{}".format(
+            results_file = "alignment_results_{}_{}.sam".format(
                     conf_alignment['tool'].lower(), conf_alignment['name'])
 
         # Initialize
@@ -417,7 +417,7 @@ class AlignmentExecution(object):
 
         num_lines = sum(1 for line in open(self.results_file, 'rU') if line[0] != '@')
         indent = 8
-        progress = Progress("Reading BBMap hits from file",
+        progress = Progress("Reading BBMap hits from {}...".format(self.results_file),
             10000, num_lines, indent=indent)
         with open(self.results_file,'rU') as f:
             for line in f:
