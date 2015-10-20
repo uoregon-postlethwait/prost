@@ -1565,7 +1565,7 @@ class ShortSeqs(dict):
 
         with open(input_file_for_alignments, 'w') as fasta_search:
             for seq_str in seq_strs_for_alignments:
-                fasta_search.write(">{} .\n{}\n".format(seq_str, seq_str))
+                fasta_search.write(">{}\n{}\n".format(seq_str, seq_str))
 
         progress.done()
 
@@ -3995,7 +3995,7 @@ class Output(object):
 
         """
 
-        progress = Progress("Writing output file", 100, len(short_seqs))
+        progress = Progress("Writing uncompressed isomiRs file", 100, len(short_seqs))
         with open(conf.general.output_file_isomirs, 'w') as f:
 
             ### Header ###
