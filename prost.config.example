@@ -36,8 +36,10 @@ species: mmu
 # while the actual locations are erased, and the sequence is not binned (i.e.
 # it is only included in the isomiRs or no_genomic_hits tab).  Reported as
 # "MLAE" (maximum locations allowed exceeded).  This may help reduce Prost!
-# memory consumption in some data sets.
-# max_locations_allowed: 40
+# memory consumption in some data sets. Note that any sequence marked as
+# MLAE will *not* be included when calculating normalization in the
+# by_genomic_location tab.
+# max_locations_allowed: 2000000000
 
 # Skip all sequence alignments.
 # skip_sequence_alignments: no
