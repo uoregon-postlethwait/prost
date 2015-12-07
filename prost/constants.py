@@ -55,7 +55,7 @@ DEFAULT_MAX_THREADS =                                                     4
 DEFAULT_MAX_LOCATIONS_TO_REPORT =                                        20
 
 # Default maximum number of locations allowed per sequence
-DEFAULT_MAX_LOCATIONS_ALLOWED =                                          40
+DEFAULT_MAX_LOCATIONS_ALLOWED =                                  2000000000
 
 # The size of buckets (in nucleotides) for mirror-miR detection, and the amount
 # of overlap (in nucleotides) for a mirror-miR.  Note that if you're using
