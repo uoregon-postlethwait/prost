@@ -14,6 +14,15 @@ then "binned" together based on genomic location.  Each bin is then annotated
 with miRBase mature sequences and hairpins, as well as other types of RNA
 obtained from Ensembl's Biomart.
 
+Authors
+=======
+
+* Peter Batzel - Conceptual Design, Software Engineering, and Algorithm Design
+* Thomas Desvignes - Conceptual Design Leader
+* Jason Sydes - Conceptual Design, Software Engineering, and Algorithm Design
+* Brian F. Eames - Prototype Design
+* John H. Postlethwait - Project Advisor
+
 News
 ====
 
