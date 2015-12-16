@@ -63,33 +63,35 @@ Quick Start
 #. Download the *Prost!* demo. 
 
    * You can do this manually by navigating your browser to the prost-demo
-     Releases page and clicking on the latest link.
+     Releases page and clicking on the `latest release link <https://github.com/uoregon-postlethwait/prost-demo/releases/latest>`_.
    * Or you do it automatically with the following command::
 
-           curl -L -O $(curl -s https://api.github.com/repos/uoregon-postlethwait/prost-demo/releases | grep browser_download_url | head -n 1 | cut -d\" -f4)
+           curl -SLOJ $(curl -s https://api.github.com/repos/uoregon-postlethwait/prost-demo/releases/latest | grep zipball_url | head -n 1 | cut -d\" -f4)
 #. Extract the *Prost!* demo and cd into the demo directory::
 
         # Replace X.X.X with the version of the demo.
         unzip prost-demo-X.X.X.zip
         cd prost-demo-X.X.X
-#. Several file in the demo are compressed to save space.  Run the following
-   script to uncompress / unpack those files::
+#. Run the prost-demo's setup script.  This script uncompresses the samples
+   files as well as builds the annotation BBMap databases.  Run the setup 
+   script like so:
 
-        sh script/uncompress.sh
+        sh scripts/setup.sh
 #. Download and extract the zebrafish reference genome.  (Alternatively, if you
    already have a copy of the zebrafish assembly available, you may use that
    instead.  It doesn't need to be the exact version shown below.  Just give
    ``bbmap.sh`` the full PATH to the ``ref=`` argument in the following step.)::
 
         # Using wget:
-        wget ftp://ftp.ensembl.org/pub/release-79/fasta/danio_rerio/dna/Danio_rerio.Zv9.dna.toplevel.fa.gz
+        wget ftp://ftp.ensembl.org/pub/release-83/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
         # Or using curl:
-        curl -O ftp://ftp.ensembl.org/pub/release-79/fasta/danio_rerio/dna/Danio_rerio.Zv9.dna.toplevel.fa.gz
+        curl -O ftp://ftp.ensembl.org/pub/release-83/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
+        
 #. Build a BBMap database of the zebrafish reference genome::
 
         # We've found a k-mer length of 7 or 8 works best for these data:
-        bbmap.sh k=7 path=BBMap/Danio_rerio.Zv9.dna.toplevel ref=Danio_rerio.Zv9.dna.toplevel.fa.gz
+        bbmap.sh k=7 path=BBMap/Danio_rerio.GRCz10.dna.toplevel ref=Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
 #. Run *Prost!*::
 
@@ -190,7 +192,7 @@ need to be edited):
    samples_filelist: samples_filelist
 
    [GenomeAlignment]
-   db: BBMap/Danio_rerio.Zv9.dna.toplevel
+   db: BBMap/Danio_rerio.GRCz10.dna.toplevel
 
    [AnnotationAlignment1]
    type: MirbaseMirAnnotation
