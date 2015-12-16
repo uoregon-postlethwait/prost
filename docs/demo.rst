@@ -36,18 +36,17 @@ of these requirements.  The following dependencies are provided:
   (``samples_filelist``) and the corresponding samples files
   (``samples/sample.brain1.fa``, ``samples/sample.heart2.fa``, and
   ``samples/sample.ovary3.fa``).
-* BBMap annotation databases:
+* Annotation FASTA files:
 
-  * A database of mature microRNAs in miRBase release 21
-    (``BBMap/mature_miRBase21.tar.gz``).  This demo also provides the source
-    fasta file used to build this database (``fa/mature_miRBase21.fa.gz``).
-  * A database of microRNA hairpins in miRBase release 21
-    (``BBMap/hairpin_miRBase21.tar.gz``). This demo also provides the source
-    fasta file used to build this database (``fa/hairpin_miRBase21.fa.gz``).
-  * A database of "other RNAs" (e.g. snoRNAs) found in zebrafish, provided by
-    Ensembl BioMart release 79 (``BBMap/BioMart_Dre79_otherRNA.tar.gz``). This
-    demo also provides the source fasta file used to build this database
-    (``fa/BioMart_Dre79_otherRNA.fa.gz``).  
+  * A FASTA file of mature microRNAs in miRBase release 21
+    (``fa/mature_miRBase21.fa.gz``).
+  * A FASTA file of microRNA hairpins in miRBase release 21
+    (``fa/hairpin_miRBase21.fa.gz``).
+  * A FASTA file of "other RNAs" (e.g. snoRNAs) found in zebrafish, provided by
+    Ensembl BioMart release 79 (``fa/BioMart_Dre79_otherRNA.fa.gz``).
+* A script (``scripts/setup.sh``) which builds annotation BBMap databases from 
+  the annotation FASTA files described above, as well as uncompresses the 
+  samples files described above.
 
 Quick Start
 ===========
@@ -74,7 +73,7 @@ Quick Start
         cd prost-demo-X.X.X
 #. Run the prost-demo's setup script.  This script uncompresses the samples
    files as well as builds the annotation BBMap databases.  Run the setup 
-   script like so:
+   script like so::
 
         sh scripts/setup.sh
 #. Download and extract the zebrafish reference genome.  (Alternatively, if you
