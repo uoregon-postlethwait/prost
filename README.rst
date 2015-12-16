@@ -18,6 +18,15 @@ Documentation
 For further information on *Prost!*, please see the full documentation at
 https://prost.readthedocs.org.
 
+Authors
+=======
+
+* Peter Batzel - Conceptual Design, Software Engineering, and Algorithm Design
+* Thomas Desvignes - Conceptual Design Leader
+* Jason Sydes - Conceptual Design, Software Engineering, and Algorithm Design
+* Brian F. Eames - Prototype Design
+* John H. Postlethwait - Project Advisor
+
 Funding
 =======
 
