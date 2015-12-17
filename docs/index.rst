@@ -5,14 +5,15 @@
 ********
 
 *Prost!* (PRocessing Of Small Transcripts) is a python application that
-quantifies and annotates microRNA (miRNA) expression in chordates and
-vertebrates with assembled genomes.  *Prost!* works by counting short
-transcripts within a user-specifiable length range.  These counted transcripts
-are aligned to a user specifiable genome allowing for post-transcriptional
-modification (e.g. untemplated additions, editing, alternative cutting) and
-then "binned" together based on genomic location.  Each bin is then annotated
-with miRBase mature sequences and hairpins, as well as other types of RNA
-obtained from Ensembl's Biomart.
+quantifies and annotates microRNA (miRNA) expression in metazoans with
+assembled genomes.  *Prost!* works by counting short transcripts within a
+user-specifiable length range.  These counted transcripts are aligned to a user
+specifiable genome allowing for post-transcriptional modification (e.g.
+untemplated additions, editing, alternative cutting) and then "binned" together
+based on genomic location.  Each bin is then annotated with databases of mature
+miRNAs, hairpins, and other types of RNAs (the databases may be derived from
+miRBase, Ensembl's BioMart, other databases, or may be custom built by the
+user).
 
 Authors
 =======
