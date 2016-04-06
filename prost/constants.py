@@ -35,7 +35,7 @@ DEFAULT_SAMPLES_FILELIST =                               "samples_filelist"
 DEFAULT_SEARCH_INPUT_FILE_FOR_ALIGNMENTS =                      "search.fa"
 
 # The default output file prefix
-DEFAULT_OUTPUT_FILE_PREFIX =                                  "prost_output"
+DEFAULT_OUTPUT_FILE_PREFIX =                                 "prost_output"
 
 # The default minimun number of times a sequence must appear (in total) across
 # all samples to be included in the data set.
@@ -74,6 +74,9 @@ DEFAULT_MIRROR_OVERLAP =                                                  5
 # 'indelnt_penalty_multiplier'.
 DEFAULT_INDELNT_PENALTY_MULTIPLIER =                                      3
 
+# Default mature mir annotation fasta file is None.  User can optionally supply
+# one.
+DEFAULT_MATURE_MIR_ANNOTATION_FASTA =                                  None
 
 #################
 ### Constants ###
