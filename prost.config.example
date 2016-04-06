@@ -50,6 +50,18 @@ species: mmu
 # Skip the annotation sequence alignments.
 # skip_annotation_alignments: no
 
+# If the mature miR annotation file is given, then an extra column
+# "MainSeqMatchesAnnotationFile" is added to the compressed_by_annotation tab
+# in the Prost! output.  For a given AnnotationBin:
+#   a) if the Bin has multiple in-species mature miR annotations, then the
+#      column is marked "Multiple"
+#   b) if the Bin's MainSequence exactly matches the annotation file's
+#      annotated sequence, then the column is marked "Yes".
+#   c) if the Bin's MainSequence does not exactly match the annotation file's
+#      annotated sequence, then the column is marked "No".
+# This column helps users assess the quality of the annotation file used.
+# mature_mir_annotation_fasta: /some/path/to/mature_miR.annotation.fa
+
 # Note: This alignment exists for documentation purposes only.  It describes
 # how to configure the several [*Alignments] below.
 # ---
