@@ -649,7 +649,7 @@ class Configuration(object):
                 required = False)
 
         self._argparser.add_argument('--output-file-prefix',
-                help = """The prefix to be used for output filenames. "(default:
+                help = """The prefix to be used for output filenames. (default:
                     %(default)s).""",
                 metavar = 'FILE',
                 action = 'store',
@@ -665,6 +665,17 @@ class Configuration(object):
                 action = 'store',
                 dest = 'input_file_for_alignments',
                 default = DEFAULT_SEARCH_INPUT_FILE_FOR_ALIGNMENTS,
+                required = False)
+
+        self._argparser.add_argument('--mature-mir-annotation-fasta',
+                help = """Optionally provide the mature miR annotation file and
+                an extra column "MainSeqMatchesAnnotationFile" is added to the
+                "by_annotation" tab.  See prost.config.example for more info.
+                (default: %(default)s).""",
+                metavar = 'FILE',
+                action = 'store',
+                dest = 'mature_mir_annotation_fasta',
+                default = DEFAULT_MATURE_MIR_ANNOTATION_FASTA,
                 required = False)
 
         self._argparser.add_argument('--create-tables',
@@ -4308,7 +4319,7 @@ class Output(object):
             alignments (Alignments): The Alignments singleton object.
         """
 
-        progress = Progress("Writing comressed output file", 100, len(bins))
+        progress = Progress("Writing compressed output file", 100, len(bins))
         with open(conf.general.output_file_comp_by_gen_loc, 'w') as f:
 
             ### Header ###
@@ -4503,7 +4514,7 @@ class Output(object):
             alignments (Alignments): The Alignments singleton object.
         """
 
-        progress = Progress("Writing seed-comressed output file", 100, len(seed_bins))
+        progress = Progress("Writing seed-compressed output file", 100, len(seed_bins))
         with open(conf.general.output_file_comp_by_seed, 'w') as f:
 
             ### Header ###
@@ -4593,12 +4604,29 @@ class Output(object):
             alignments (Alignments): The Alignments singleton object.
         """
 
-        progress = Progress("Writing annotation-comressed output file", 100,
+        progress = Progress("Writing annotation-compressed output file", 100,
                             len(annotation_bins))
+
+        # Optional: Read in mature miR anno file, make a dict
+        if conf.general.mature_mir_annotation_fasta:
+            mature_mir_anno_dict = {}
+            with open(conf.general.mature_mir_annotation_fasta, 'r') as f:
+                while(True):
+                    desc = f.readline().rstrip()
+                    seq = f.readline().rstrip()
+                    if not desc:
+                        break
+                    desc = desc.split()[0][1:]
+                    mature_mir_anno_dict[desc] = seq
+
         with open(conf.general.output_file_comp_by_annotation, 'w') as f:
 
             ### Header ###
             header = "Anno_idx MainSequence".split()
+
+            # MainSeqMatchesAnnotationFile
+            if conf.general.mature_mir_annotation_fasta:
+                header.append('MainSeqMatchesAnnotationFile')
 
             # Annotations
             header += self._headers_annotations(conf, alignments)
@@ -4629,6 +4657,7 @@ class Output(object):
 
             ### Data ###
             rows = []
+
             for bn in annotation_bins.all_bins_sorted_by_starting_seq():
                 progress.progress()
 
@@ -4636,6 +4665,23 @@ class Output(object):
 
                 # Add the annotations and bin index
                 row = [bn.idx, bn.main_short_seq_str]
+
+                # MainSeqMatchesAnnotationFile
+                mir_species_annos = bn.mirbase_mir_annotations(short_seqs)[0]
+                if conf.general.mature_mir_annotation_fasta:
+                    if len(mir_species_annos) > 1:
+                        # multiple annotations
+                        row.append('Multiple')
+                    elif len(mir_species_annos) == 0:
+                        # none - should be impossible?
+                        raise ControlFlowException, \
+                            "ERR408: Shouldn't be possible to reach here."
+                    else:
+                        anno = mir_species_annos[0].name
+                        if mature_mir_anno_dict[anno] == bn.main_short_seq_str:
+                            row.append('Yes')
+                        else:
+                            row.append('No')
 
                 # Annotations
                 for annotation_alignment in alignments.annotation_alignments:
