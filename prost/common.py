@@ -1,4 +1,4 @@
-# Copyright (C) 2014, 2015  Peter Batzel and Jason Sydes
+# Copyright (C) 2014-2017 Peter Batzel and Jason Sydes
 #
 # This file is part of Prost!.
 #
