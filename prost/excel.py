@@ -133,7 +133,7 @@ def to_xlsx_sheetname(tsv_filename, in_prefix):
         This is the naming scheme we've got currently.
 
         prost_output_candidate_arm_switch.tsv           -> candidate_arm_switch
-        prost_output_candidate_mirror-mirs.tsv          -> candidate_mirror-mirs
+        prost_output_candidate_mirror-miRNAs.tsv        -> candidate_mirror-miRNAs
         prost_output_compressed_by_annotation.tsv       -> by_annotation
         prost_output_compressed_by_genomic_location.tsv -> by_genomic_location
         prost_output_compressed_by_seed.tsv             -> by_seed
@@ -442,7 +442,6 @@ def create_one(in_prefix, out_prefix, tsv_files):
                 FMT_PERCENT_CONDITIONAL_TWO_COLOR,
                 FMT_PERCENT_CONDITIONAL_THREE_COLOR)
     return book_filename
-
 
 def create_many(in_prefix, out_prefix, tsv_files):
     """Create multiple workbooks, one for each TSV file.

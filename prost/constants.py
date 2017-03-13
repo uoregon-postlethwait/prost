@@ -57,12 +57,12 @@ DEFAULT_MAX_LOCATIONS_TO_REPORT =                                        20
 # Default maximum number of locations allowed per sequence
 DEFAULT_MAX_LOCATIONS_ALLOWED =                                  2000000000
 
-# The size of buckets (in nucleotides) for mirror-miR detection, and the amount
-# of overlap (in nucleotides) for a mirror-miR.  Note that if you're using
-# negative overlap, you'll want the bucket length to be some X times larger than
-# the absolute value of the overlap length.  Haven't done the math, but 6 times
-# larger should do. If doing positive overlap, then 200bp for the bucket length
-# should be fine.
+# The size of buckets (in nucleotides) for mirror-miRNA detection, and the
+# amount of overlap (in nucleotides) for a mirror-miRNA.  Note that if you're
+# using negative overlap, you'll want the bucket length to be some X times
+# larger than the absolute value of the overlap length.  Haven't done the math,
+# but 6 times larger should do. If doing positive overlap, then 200bp for the
+# bucket length should be fine.
 DEFAULT_MIRROR_BUCKET_LENGTH =                                          200
 DEFAULT_MIRROR_OVERLAP =                                                  5
 #DEFAULT_MIRROR_BUCKET_LENGTH =                                         1200
@@ -88,7 +88,7 @@ OUTPUT_FILE_SUFFIX_NO_HITS =                              "no_genomic_hits"
 OUTPUT_FILE_SUFFIX_COMP_BY_GEN_LOC =       "compressed_by_genomic_location"
 OUTPUT_FILE_SUFFIX_COMP_BY_SEED =                      "compressed_by_seed"
 OUTPUT_FILE_SUFFIX_COMP_BY_ANNOTATION =          "compressed_by_annotation"
-OUTPUT_FILE_SUFFIX_MIRROR_MIRS =                    "candidate_mirror-mirs"
+OUTPUT_FILE_SUFFIX_MIRROR_MIRS =                  "candidate_mirror-miRNAs"
 OUTPUT_FILE_SUFFIX_ARM_SWITCH =                      "candidate_arm_switch"
 
 # Collect all output file suffixes for easier machine parsing
@@ -143,7 +143,14 @@ INDEL_INDICATOR =                                                       "g"
 
 # Executables
 EXECUTABLE_PYTHON =                                                'python'
-EXECUTABLE_BBMAP =                                        'bbmapskimmer.sh'
+# TEMPORARY!!!!
+# TEMPORARY!!!!
+# TEMPORARY!!!!
+# TEMPORARY!!!!
+# TEMPORARY!!!!
+# TEMPORARY!!!!
+EXECUTABLE_BBMAP =                                        'bbmap.sh'
+#EXECUTABLE_BBMAP =                                        'bbmapskimmer.sh'
 
 # Prost log filename
 LOG_FILENAME =                                                  'prost.log'

@@ -2148,7 +2148,11 @@ class ShortSeqs(dict):
         """
 
         for annotation_alignment in alignments.annotation_alignments:
-            self._perform_annotation(annotation_alignment, species)
+            annotation_cls = annotation_alignment.annotation_cls
+            if annotation_cls == MirbaseMirReverseAnnotation:
+                self._perform_reverse_annotation(annotation_alignment, species)
+            else:
+                self._perform_annotation(annotation_alignment, species)
 
     def _perform_annotation(self, annotation_alignment, species):
         """... perform a single annotations (eg only a single BBMap search) ...
@@ -2162,7 +2166,7 @@ class ShortSeqs(dict):
         """
 
         annotation_cls = annotation_alignment.annotation_cls
-        for hit in annotation_alignment.alignment_execution.hits():
+        for hit in annotation_alignment.alignment_execution.hits_filtered():
             # Note - Here we have *hard-coded* the fact that an alignment to an
             # annotation sequence needs to be full length.
             if (    (not hit.is_no_hit) and
@@ -2197,11 +2201,32 @@ class ShortSeqs(dict):
             # Remove the query sequence from the hit to save memory.
             hit.remove_query_sequence()
 
+    def _perform_reverse_annotation(self, annotation_alignment, species):
+        """... performs the REVERSE annotation ...
 
+        This adds an extra column representing the reverse miR annotation, in
+        which the query sequence is miRBase mature miRs, and the reference
+        sequences is our compressed reads
 
+        Arguments:
+            annotation_alignment: A single AnnotationAlignment.
+            species (str): The species under investigation.
+        """
+        annotation_cls = annotation_alignment.annotation_cls
+        assert(annotation_cls == MirbaseMirReverseAnnotation)
+        for hit in annotation_alignment.alignment_execution.hits_full_len_100_perc_core():
+            # Note - Above we have *hard-coded* the fact that a reverse alignment
+            # a full length perfect match.
+            if (hit.reference_start < hit.reference_end):
 
+                short_seq = self[hit.reference_sequence_name]
 
+                annotation = annotation_cls(hit, species)
+                if annotation not in short_seq.annotations:
+                    short_seq.annotations.append(annotation)
 
+            # Remove the query sequence from the hit to save memory.
+            hit.remove_query_sequence()
 
 
 class Bins(object):
@@ -2610,7 +2635,7 @@ class GenLocBins(Bins):
     def post_binning_processing(self, conf):
         """Perform various post binning processing.
 
-        At time of writing this includes only mirror-miR detection.  However,
+        At time of writing this includes only mirror-miRNA detection.  However,
         see the TODO below.
 
         TODO: Profile time taken to perform the following three
@@ -2620,7 +2645,7 @@ class GenLocBins(Bins):
 
                 1. calc per-bin per-sample totals for all bins
                 2. read count normalization
-                3. mirror-miR detection
+                3. mirror-miRNA detection
         """
         # For now, set a small number for max_gen_loc_len...
         self._mirror_mir_detection(TODO__HARDCODE_SMALL_MAX_GEN_LOC_LEN_FOR_MIRROR_MIR_DETECTION)
@@ -2753,8 +2778,8 @@ class GenLocBins(Bins):
     def _mirror_mir_detection(self, max_gen_loc_len):
         """Mirror miR detection module.
 
-        A first pass at mirror miR detection.  Better mirror-miR detection will
-        be available after novel miR detection is implemented.
+        A first pass at mirror miR detection.  Better mirror-miRNA detection
+        will be available after novel miR detection is implemented.
 
         Args:
             max_gen_loc_len (int): The maximum number of genomic locations that
@@ -3028,6 +3053,10 @@ class Bin(SlotPickleMixin):
     def mirbase_mir_annotations(self, short_seqs):
         """See self._mirbase_annotations()."""
         return self._mirbase_annotations(short_seqs, MirbaseMirAnnotation)
+
+    def mirbase_mir_reverse_annotations(self, short_seqs):
+        """See self._mirbase_annotations()."""
+        return self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
 
     def mirbase_hairpin_annotations(self, short_seqs):
         """See self._mirbase_annotations()."""
@@ -3377,7 +3406,7 @@ class GenLocBin(Bin):
                     # Aligned to an 'N' (i.e. cigar has an 'M').
                     # Ignore for calculations and log.
                     pmsg(
-                        "Warning: While trying to calculate % miR "
+                        "Warning: While trying to calculate % miRNA "
                         "modifications, the binstarter sequence or the member "
                         "sequence aligned to one or more 'N's in the "
                         "reference genome:\n"
@@ -3863,12 +3892,15 @@ class ModificationThing(object):
 
 class Output(object):
 
-    def _headers_annotations(self, conf, alignments):
+    def _headers_annotations(self, conf, alignments,
+            include_reverse_anno=False):
         """Create the headers for the annotations columns.
 
         Args:
             conf (Configuration): The Configuration singleton object.
             alignments (Alignments): The Alignments singleton.
+            include_reverse_anno (bool): Whether or not to include the reverse
+                annotations...
 
         Returns:
             [str]: A list of annotations headers.
@@ -3885,7 +3917,10 @@ class Output(object):
                 for kind in annotation_cls.Kind:
                     if kind.name == 'species':
                         if annotation_cls == MirbaseMirAnnotation:
-                            header.append('{}_miR'.format(conf.general.species))
+                            header.append('{}_miRNA'.format(conf.general.species))
+                        elif annotation_cls == MirbaseMirReverseAnnotation:
+                            if include_reverse_anno:
+                                header.append('{}_miRNA_rev'.format(conf.general.species))
                         elif annotation_cls == MirbaseHairpinAnnotation:
                             header.append('{}_hairpin'.format(conf.general.species))
                         else:
@@ -3893,7 +3928,10 @@ class Output(object):
                                     "ERR415: Shouldn't be possible to reach here."
                     else:
                         if annotation_cls == MirbaseMirAnnotation:
-                            header.append('other_species_miR')
+                            header.append('other_species_miRNA')
+                        elif annotation_cls == MirbaseMirReverseAnnotation:
+                            if include_reverse_anno:
+                                header.append('other_species_miRNA_rev')
                         elif annotation_cls == MirbaseHairpinAnnotation:
                             header.append('other_species_hairpin')
                         else:
@@ -3937,7 +3975,7 @@ class Output(object):
                 header.append("{}_norm".format(sample_name))
 
             # Annotations
-            header += self._headers_annotations(conf, alignments)
+            header += self._headers_annotations(conf, alignments, True)
 
             # Write
             header = "{}\n".format("\t".join(header))
@@ -4111,7 +4149,7 @@ class Output(object):
             # annotations, then by the sum of unnormalized counts (higest
             # expression goes first).
             anno_idxs = [i for i, h in enumerate(header) if
-                    re.search('(_miR|_hairpin|_ncRNA)$', h)]
+                    re.search('(_miRNA|_hairpin|_ncRNA)$', h)]
             idx_anno_first, idx_anno_last = anno_idxs[0], anno_idxs[-1]
             expr_idxs = [i for i, h in enumerate(header) if h in sample_names]
             idx_expr_first, idx_expr_last = expr_idxs[0], expr_idxs[-1]
@@ -4237,12 +4275,12 @@ class Output(object):
             header = "Loc_idx BinStarter Locations CIGARs_5pto3p Designations".split()
 
             # Annotations
-            header += self._headers_annotations(conf, alignments)
+            header += self._headers_annotations(conf, alignments, True)
 
             # "Extract" indexes by which to sort.  We'll be sorting first by the
             # the designation (we want "1s" on top), then in_species_hairpin,
-            # followed by the reverse of the in_species_miR, then
-            # other_species_hairpin, then other_species_miR (reverse). The
+            # followed by the reverse of the in_species_miRNA, then
+            # other_species_hairpin, then other_species_miRNA (reverse). The
             # reason for this sorting is so that roughly the 5p will come before
             # the 3p (it's not perfect, but it's good enough).
             #
@@ -4256,7 +4294,7 @@ class Output(object):
             idx_anno_other_species_ncRNA = 9
 
             # Ambiguous this_species mir and hairpin annotations
-            header.append('{}_miR_ambiguous?'.format(conf.general.species))
+            header.append('{}_miRNA_ambiguous?'.format(conf.general.species))
             header.append('{}_hairpin_ambiguous?'.format(conf.general.species))
 
             # Samples
@@ -4348,6 +4386,9 @@ class Output(object):
                     elif annotation_cls == MirbaseMirAnnotation:
                         for annos in bn.mirbase_mir_annotations(short_seqs):
                             row.append(",".join(a.name for a in annos))
+                    elif annotation_cls == MirbaseMirReverseAnnotation:
+                        for annos in bn.mirbase_mir_reverse_annotations(short_seqs):
+                            row.append(",".join(a.name for a in annos))
                     elif annotation_cls == MirbaseHairpinAnnotation:
                         for annos in bn.mirbase_hairpin_annotations(short_seqs):
                             row.append(",".join(a.name for a in annos))
@@ -4378,9 +4419,9 @@ class Output(object):
             # Sort: In the following order:
             #   * designation (first character only)
             #   * in_species_hairpin
-            #   * in_species_miR (reverse)
+            #   * in_species_miRNA (reverse)
             #   * other_species_hairpin
-            #   * other_species_miR (reverse)
+            #   * other_species_miRNA (reverse)
             #   * other_species_ncRNA
             #   * designation (the entire string)
             # Use stability of sort (i.e. sort several times).
@@ -4542,7 +4583,7 @@ class Output(object):
             header += self._headers_annotations(conf, alignments)
 
             # "Extract" indexes by which to sort.  We'll be sorting first by the
-            # in_species_hairpin, followed by the reverse of the in_species_miR.
+            # in_species_hairpin, followed by the reverse of the in_species_miRNA.
             # The reason for this sorting is so that roughly the 5p will come
             # before the 3p (it's not perfect, but it's good enough).
             #
@@ -4643,7 +4684,7 @@ class Output(object):
             alignments (Alignments): The Alignments singleton object.
         """
 
-        progress = Progress("Writing mirror miRs output file")
+        progress = Progress("Writing mirror miRNAs output file")
         with open(conf.general.output_file_mirror_mirs, 'w') as f:
 
             ### Header ###
