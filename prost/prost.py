@@ -31,6 +31,7 @@ __version_info__ = tuple(__version__.split('.'))
 # Prost imports
 from prost.constants import *
 from prost.common import (
+    ControlFlowException,
     ConfigurationException,
     CannotContinueException,
     PrerequisitesException,
@@ -42,6 +43,12 @@ from prost.common import (
     SlotPickleMixin,
     Progress)
 from prost.alignment import (Alignments, GenomeAlignment)
+from prost.annotation import (Annotation,
+                              MirbaseAnnotation,
+                              MirbaseMirAnnotation,
+                              MirbaseMirReverseAnnotation,
+                              MirbaseHairpinAnnotation,
+                              BiomartOtherRNAAnnotation)
 #from prost.db_caching import (
 #    DB_PROXY,
 #    SequenceDB,
@@ -75,10 +82,6 @@ import ConfigParser
 
 # Regular expressions (for parsing config file)
 import re
-
-# Backported python 3.4 Enums, for annotations.  From package enum34.
-# from lib.enum import Enum
-from enum import Enum
 
 # For pickling
 import cPickle as pickle
@@ -2195,103 +2198,10 @@ class ShortSeqs(dict):
             hit.remove_query_sequence()
 
 
-class Annotation(SlotPickleMixin):
-    """Abstract Base Class for annotations."""
-
-    __metaclass__ = ABCMeta
-    __slots__ = ('name', 'kind')
-
-    def __repr__(self):
-        return pprint.pformat(self._key())
-
-    def __str__(self):
-        return self.name
-
-    def _key(self):
-        return (self.__class__.__name__, self.name, self.kind)
-
-    def __eq__(self, other):
-        return self._key() == other._key()
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(self._key())
 
 
-class MirbaseAnnotation(Annotation):
-    """Abstract Base Class for miRBase annotations.
-
-    Arguments:
-        hit - An AlignmentExecutionHit object.
-        species - String - The species under examination.
-    """
-
-    __metaclass__ = ABCMeta
-    __slots__ = ()
 
 
-class MirbaseMirAnnotation(MirbaseAnnotation):
-    """A miRBase miR annotation."""
-    __slots__ = ()
-
-    class Kind(Enum):
-        species = 0
-        other_species = 1
-
-    def __init__(self, hit, species):
-        # Store the name (e.g. 'mmu-mir-205')
-        self.name = hit.reference_sequence_name
-
-        # Set the 'kind' based upon the species in the hit.
-        # example reference sequence name in miRBase: 'mmu-mir-205'
-        if hit.reference_sequence_name[:3] == species:
-            self.kind = self.Kind.species
-        else:
-            self.kind = self.Kind.other_species
-
-
-class MirbaseHairpinAnnotation(MirbaseAnnotation):
-    """A miRBase hairpin annotation."""
-    __slots__ = ()
-
-    class Kind(Enum):
-        species = 0
-        other_species = 1
-
-    def __init__(self, hit, species):
-        # Store the name (e.g. 'mmu-mir-205')
-        self.name = hit.reference_sequence_name
-
-        # Set the 'kind' based upon the species in the hit.
-        # example reference sequence name in miRBase: 'mmu-mir-205'
-        if hit.reference_sequence_name[:3] == species:
-            self.kind = self.Kind.species
-        else:
-            self.kind = self.Kind.other_species
-
-
-class BiomartOtherRNAAnnotation(Annotation):
-    """..."""
-    __slots__ = ('biotype',)
-
-    # Because of peculiarities with the output, the only 'kind' of the
-    # BiomartOtherRNAAnnotation is simply biomart_other_rna_annotation (in the
-    # Mirbase annotations, the 'kind' corresponds to the column, and each
-    # annotation fits inside one column; in the Biomart annotations, there is
-    # only one kind, but each annotation is spread across two columns...)
-    # (yah yah, kinda hacky...)
-    class Kind(Enum):
-        biomart_other_rna_annotation = 0
-
-    def __init__(self, hit):
-
-        # Store the kind (invariant) then name (e.g. Mir27b) then the biotype
-        # of the annotation (e.g. miRNA, snoRNA, etc)
-        self.kind = self.Kind.biomart_other_rna_annotation
-        self.name = hit.reference_sequence_name.split('|')[0]
-        self.biotype = hit.reference_sequence_name.split('|')[1]
 
 
 class Bins(object):

@@ -1,4 +1,4 @@
-# Copyright (C) 2014, 2015  Peter Batzel and Jason Sydes
+# Copyright (C) 2014-2017 Peter Batzel and Jason Sydes
 #
 # This file is part of Prost!.
 #
@@ -23,6 +23,9 @@ from prost.common import (ExecutionException,
                           perr,
                           SlotPickleMixin,
                           Progress)
+from prost.annotation import (MirbaseMirAnnotation,
+                              MirbaseMirReverseAnnotation)
+
 #from prost.db_caching import (DB_PROXY,
 #                              SequenceDB,
 #                              ShortSeqCache,
