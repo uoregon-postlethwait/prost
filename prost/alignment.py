@@ -1,4 +1,4 @@
-# Copyright (C) 2014, 2015  Peter Batzel and Jason Sydes
+# Copyright (C) 2014-2017 Peter Batzel and Jason Sydes
 #
 # This file is part of Prost!.
 #
@@ -23,6 +23,9 @@ from prost.common import (ExecutionException,
                           perr,
                           SlotPickleMixin,
                           Progress)
+from prost.annotation import (MirbaseMirAnnotation,
+                              MirbaseMirReverseAnnotation)
+
 #from prost.db_caching import (DB_PROXY,
 #                              SequenceDB,
 #                              ShortSeqCache,
@@ -135,10 +138,20 @@ class Alignments(object):
 
         # Create any Annotation Alignments
         for anno_align_name in conf.annotation_alignment_names:
+            # Note: Though _create_alignment() is singular, for the case of the
+            # MirbaseMirAnnotation, it actually creates two alignments: one for
+            # the forward MirbaseMirAnnotation, and one for the reverse
+            # MirbaseMirReverseAnnotation.
             self._create_alignment(conf, anno_align_name, AnnotationAlignment)
 
     def _create_alignment(self, conf, conf_alignment_section_name, align_cls):
         """Create an Alignment object.
+
+        Note:
+            Though _create_alignment() is singular, for the case of the
+            MirbaseMirAnnotation, it actually creates two alignments: one for
+            the forward MirbaseMirAnnotation, and one for the reverse
+            MirbaseMirReverseAnnotation.
 
         Arguments:
             conf: The Configuration singleton object.
@@ -165,6 +178,11 @@ class Alignments(object):
         elif align_cls == AnnotationAlignment:
             self._alignments.append(align_cls(conf,
                 conf_alignment_section_name, annotation_cls))
+            # Do we need to also create a reverse annotation alignment?
+            if annotation_cls == MirbaseMirAnnotation:
+                # Yes! Create it!  Yes, hardcoded.  Exactly what we want!
+                self._alignments.append(AnnotationReverseAlignment(conf,
+                    conf_alignment_section_name, MirbaseMirReverseAnnotation))
         else:
             raise ControlFlowException, \
                     "ERR541: Shouldn't be possible to reach here."
@@ -184,13 +202,18 @@ class Alignment(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, conf, conf_alignment_section_name, input_file):
+    def __init__(self, conf, conf_alignment_section_name, reference_seqs_path,
+            query_seqs_path, results_file=None):
         """Creates the contained AlignmentExecution object.
 
         Arguments:
             conf: The Configuration singleton object.
             conf_alignment_section_name: The Configuration section name
                 corresponding to this Alignment.
+            reference_seqs_path(str): Path to the FASTA file or sequence
+                database of reference sequences.
+            query_seqs_path(str): Path to the FASTA file of query sequences.
+            results_file(str): Path to output SAM file. Optional.
         """
 
         # Based upon the search tool specified in configuration, create the
@@ -204,7 +227,8 @@ class Alignment(object):
                     "ERR323: Shouldn't be possible to reach here."
 
         self.alignment_execution = align_exec_cls(conf,
-                conf_alignment_section_name, input_file)
+                conf_alignment_section_name, reference_seqs_path,
+                query_seqs_path, results_file)
 
     def align(self, skip):
         """Performs the sequence alignment.
@@ -233,7 +257,8 @@ class Alignment(object):
 
         ### NOTE -  Currently broken! We stopped using GenomicLocation and instead are now just using AlignmentExecutionHits.
         # Get the sequence database first
-        db = SequenceDB.get(SequenceDB.name == self.alignment_execution.seq_db)
+        db = SequenceDB.get(SequenceDB.name ==
+                self.alignment_execution.reference_seqs_path)
 
         # Cache it
         progress = Progress(
@@ -281,10 +306,12 @@ class GenomeAlignment(Alignment):
             conf_alignment_section_name: The Configuration section name
                 corresponding to this Alignment.
         """
-
-        input_file = conf.general.input_file_for_alignments
+        conf_alignment = conf.get_section(conf_alignment_section_name)
+        reference_seqs_path = conf_alignment['db']
+        query_seqs_path = conf.general.input_file_for_alignments
         super(GenomeAlignment, self).__init__(conf,
-                conf_alignment_section_name, input_file)
+                conf_alignment_section_name, reference_seqs_path,
+                query_seqs_path)
 
 
 class AnnotationAlignment(Alignment):
@@ -299,11 +326,38 @@ class AnnotationAlignment(Alignment):
                 corresponding to this Alignment.
             annotation_cls: The Annotation class used for annotating.
         """
+        self.annotation_cls = annotation_cls
+        conf_alignment = conf.get_section(conf_alignment_section_name)
+        reference_seqs_path = conf_alignment['db']
+        query_seqs_path = conf.general.input_file_for_alignments
+        super(AnnotationAlignment, self).__init__(conf,
+                conf_alignment_section_name, reference_seqs_path, query_seqs_path)
+
+
+class AnnotationReverseAlignment(Alignment):
+    """An annotation alignment where we instead align known miRs against our
+    reads (ie the reverse of the normal annotation alignment)."""
+
+    def __init__(self, conf, conf_alignment_section_name, annotation_cls):
+        """Same as Alignment, except for one additional argument.
+
+        Arguments:
+            conf: The Configuration singleton object.
+            conf_alignment_section_name: The Configuration section name
+                corresponding to this Alignment.
+            annotation_cls: The Annotation class used for annotating.
+        """
 
         self.annotation_cls = annotation_cls
-        input_file = conf.general.input_file_for_alignments
-        super(AnnotationAlignment, self).__init__(conf,
-                conf_alignment_section_name, input_file)
+        conf_alignment = conf.get_section(conf_alignment_section_name)
+        query_seqs_path = conf_alignment['db']
+        reference_seqs_path = conf.general.input_file_for_alignments
+        # Set the name of the results file - a bit hacky here...
+        results_file = "alignment_results_bbmap_matures_reverse.sam"
+
+        super(AnnotationReverseAlignment, self).__init__(conf,
+                conf_alignment_section_name, reference_seqs_path,
+                query_seqs_path, results_file)
 
 
 class AlignmentExecution(object):
@@ -315,13 +369,13 @@ class AlignmentExecution(object):
     __metaclass__ = ABCMeta
 
     @property
-    def seq_db(self): return self._seq_db
+    def reference_seqs_path(self): return self._reference_seqs_path
+
+    @property
+    def query_seqs_path(self): return self._query_seqs_path
 
     @property
     def parameters_file(self): return self._parameters_file
-
-    @property
-    def input_file(self): return self._input_file
 
     @property
     def results_file(self): return self._results_file
@@ -337,29 +391,36 @@ class AlignmentExecution(object):
         """
         return self._cline
 
-    def __init__(self, conf, conf_alignment_section_name, input_file):
+    def __init__(self, conf, conf_alignment_section_name, reference_seqs_path,
+            query_seqs_path, results_file=None):
         """
         Arguments:
             conf: The Configuration singleton object.
             conf_alignment_section_name: The name of the Alignment section
                 corresponding to this Alignment.
+            reference_seqs_path(str): Path to the FASTA file or sequence
+                database of reference sequences.
+            query_seqs_path(str): Path to the FASTA file of query sequences.
+
         """
 
         # Get the Alignment configuration sections
         conf_alignment = conf.get_section(conf_alignment_section_name)
 
-        # Set the results_file name.
-        try:
-            results_file = conf_alignment['results_file']
-        except KeyError:
-            # results_file wasn't specified. Set to default.
-            results_file = "alignment_results_{}_{}.sam".format(
-                    conf_alignment['tool'].lower(), conf_alignment['name'])
+        # Set the results_file name if not specified in configuration or as an
+        # argument.
+        if results_file is None:
+            try:
+                results_file = conf_alignment['results_file']
+            except KeyError:
+                # results_file wasn't specified. Set to default.
+                results_file = "alignment_results_{}_{}.sam".format(
+                        conf_alignment['tool'].lower(), conf_alignment['name'])
 
         # Initialize
         self._cline = ""
-        self._seq_db = conf_alignment['db']
-        self._input_file = input_file
+        self._reference_seqs_path = reference_seqs_path
+        self._query_seqs_path = query_seqs_path
         self._results_file = results_file
         self._max_threads = conf.general.max_threads
         self._min_seq_length = conf.general.min_seq_length
@@ -409,11 +470,31 @@ class AlignmentExecution(object):
                         ("Execution of the following command failed:\n{}".
                                 format(self.command_line))
 
-    def hits(self):
-        """Generator that walks through each alignment hit.
+    def hits_filtered(self):
+        """Generator that walks through each alignment hit, with some
+        filtering.
+
+        Handles all forward annotations at time of writing.
 
         Implemented as a generator so as to avoid loading the entire alignment
-        file into memory."""
+        file into memory.
+
+        Labels hits as "is_no_hit" for hits that:
+        * Have too many non 3-prime mismatches
+        * Have too many 3-prime mismatches
+        * Hits that have indels, if allow_indels=False
+        * Are soft clipped
+
+        Performs additional post-filtering of hits that are too short or too
+        long.  This allows users to run a single set of alignments, and then
+        perform multiple Prost runs using that single set of alignments, so
+        long as the min_seq_len & max_seq_len for each of the runs do not
+        exceed the bounds of Prost run that generated the original single set
+        of alignments.  This allows the user to more quickly perform parameters
+        runs, since alignments need only be run once.  For example, the user
+        may set min/max_seq_len to (14,32) and run "prost", then run "prost -s"
+        several times setting min/max_seq_len to ((17,25), (17,30), (20,32)).
+        """
 
         num_lines = sum(1 for line in open(self.results_file, 'rU') if line[0] != '@')
         indent = 8
@@ -432,7 +513,9 @@ class AlignmentExecution(object):
                     hit = hit_cls(line)
                 except UnmappedAlignmentException as e:
                     # Found an unmapped read.  Continue without creating the
-                    # hit.
+                    # hit. If the seq_len does not exceed min/max_seq_len,
+                    # report the error.
+
                     # TODO: If this is BBMap or BBMapSkimmer, this is likely a
                     # BBMap/BBMapSkimmer bug.  Report this bug.
                     perr(e)
@@ -454,6 +537,51 @@ class AlignmentExecution(object):
                 yield hit
         progress.done()
 
+    def hits_full_len_100_perc_core(self):
+        """Generator that walks through each alignment hit, pulling out only
+        those that are full length and 100% core identity (ie perfect matches).
+
+        Written to handle reverse annotation.
+
+        Implemented as a generator so as to avoid loading the entire alignment
+        file into memory.
+        """
+
+        num_lines = sum(1 for line in open(self.results_file, 'rU') if line[0] != '@')
+        indent = 8
+        progress = Progress("Reading BBMap hits from {}...".format(self.results_file),
+            10000, num_lines, indent=indent)
+        with open(self.results_file,'rU') as f:
+            for line in f:
+                if line[0] == '@':
+                    continue
+                progress.progress()
+                try:
+                    # e.g. if self's class is BBMapExecution, then hit_cls will
+                    # be BBmapExecutionHit
+                    hit_cls_name = self.__class__.__name__ + 'Hit'
+                    hit_cls = str_to_cls('prost.alignment', hit_cls_name)
+                    hit = hit_cls(line)
+                except UnmappedAlignmentException as e:
+                    # Found an unmapped read.  Continue without creating the
+                    # hit. If the seq_len does not exceed min/max_seq_len,
+                    # report the error.
+
+                    # TODO: If this is BBMap or BBMapSkimmer, this is likely a
+                    # BBMap/BBMapSkimmer bug.  Report this bug.
+                    perr(e)
+                    continue
+
+                # Filter for hits that are full-length and 100% identity out hits that have any mismatches, any soft-clipping,
+                # any indels.
+
+                if hit.is_full_length and hit.has_100_percent_core_identity:
+                    # hit.is_no_hit = False     # Not needed.
+                    yield hit
+                # else:
+                #     hit.is_no_hit = True      # Not needed.
+        progress.done()
+
     def single_sequence_hit_sets(self):
         """Generator that walks through groups of search hits comprised of the
         same single query sequence.
@@ -473,7 +601,7 @@ class AlignmentExecution(object):
         hit_set = []
         last_query_sequence = None
 
-        for hit in self.hits():
+        for hit in self.hits_filtered():
             if hit.query_sequence == last_query_sequence:
                 hit_set.append(hit)
             elif last_query_sequence == None:
@@ -534,9 +662,9 @@ class BBMapAlignmentExecution(AlignmentExecution):
         max_mismatches = max(self.max_3p_mismatches,
                 self.max_non_3p_mismatches)
         params['out'] = self.results_file
-        params['in'] = self.input_file
+        params['in'] = self.query_seqs_path
         params['threads'] = str(self._max_threads)
-        params['path'] = os.path.expanduser(self.seq_db)
+        params['path'] = os.path.expanduser(self.reference_seqs_path)
         if self._allow_indels:
             params['maxindel'] = str(
                 self.max_non_3p_mismatches //
@@ -544,6 +672,20 @@ class BBMapAlignmentExecution(AlignmentExecution):
         else:
             params['maxindel'] = "0"
 
+        # Figure out if we have a BBMap DB or a FASTA file.
+        is_a_fasta_file = False
+        if not os.path.isdir(params['path']):
+            # Possibly FASTA file... Check extension:
+            if os.path.splitext(params['path'])[1] not in ('.fa', '.fasta'):
+                # Not a BBMap DB *or* a FASTA file!
+                raise ConfigurationException, (
+                    "{} is not a BBMap DB or a FASTA file.".format(
+                        params['path']))
+            else:
+                # It's a FASTA file.
+                is_a_fasta_file = True
+                params['ref'] = params['path']
+                params.pop('path', None)
 
         # Calculate BBMap param 'minid' ("approximate minimum alignment
         # identity") and idfilter (independant of minid; sets exact minimum
@@ -566,6 +708,8 @@ class BBMapAlignmentExecution(AlignmentExecution):
                 self._cline.append('{}="{}"'.format(key, params[key].strip('"').strip()))
             else:
                 self._cline.append('{}={}'.format(key, params[key].strip('"').strip()))
+        if is_a_fasta_file:
+            self._cline.append('nodisk')
         self._cline = ' '.join(self._cline)
 
 
@@ -719,6 +863,12 @@ class AlignmentExecutionHit(SlotPickleMixin):
         pass
 
     @abstractproperty
+    def query_sequence_name(self):
+        """Returns the query sequence name of this hit.  Added to give support
+        to reverse annotations."""
+        pass
+
+    @abstractproperty
     def reference_sequence_name(self):
         """Returns the reference sequence name (e.g. a linkage group) of this
         hit."""
@@ -794,7 +944,8 @@ class AlignmentExecutionHit(SlotPickleMixin):
     @abstractproperty
     def lg(self):
         """Courtesy alias for reference_sequence_name().  Used by code to track
-        the genomic locations of our short sequences."""
+        the genomic locations of our short sequences. ONLY to be used for
+        forward alignments."""
         pass
 
     @abstractproperty
@@ -859,7 +1010,7 @@ class AlignmentExecutionHit(SlotPickleMixin):
     ## Genomic Location Methods ##
 
     def within_mirror(self, other, overlap=DEFAULT_MIRROR_OVERLAP):
-        """Is this genomic location a potential mirror-mir of the 'other'
+        """Is this genomic location a potential mirror-miRNA of the 'other'
         genomic location?
         """
         within = False
@@ -1049,12 +1200,20 @@ class SamAlignmentExecutionHit(AlignmentExecutionHit):
 
     @property
     def query_sequence(self):
+        # Note: this is used in the forward alignments only, and works because
+        # of the assumption that Prost generated the query sequence file such
+        # that the FASTA description line equals the sequence line.
+        return self.qname
+
+    @property
+    def query_sequence_name(self):
         return self.qname
 
     @property
     def reference_sequence_name(self):
         return self.rname
     # Alias
+    # Again, note that this alias is for use ONLY with the forward alignments.
     lg = reference_sequence_name
 
     # Example of determining the rightmost reference position in an alignment:

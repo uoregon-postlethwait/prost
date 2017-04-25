@@ -62,6 +62,7 @@ species: mmu
 # This column helps users assess the quality of the annotation file used.
 # mature_mir_annotation_fasta: /some/path/to/mature_miR.annotation.fa
 
+
 # Note: This alignment exists for documentation purposes only.  It describes
 # how to configure the several [*Alignments] below.
 # ---
@@ -97,7 +98,7 @@ indelnt_penalty_multiplier: 3
 type: MirbaseMirAnnotation
 name: matures
 tool: bbmap
-db: /some/path/to/mature_miR.annotation.db
+db: /some/path/to/mature_miR.annotation.fasta
 max_3p_mismatches: 0
 max_non_3p_mismatches: 0
 allow_indels: no
@@ -106,7 +107,7 @@ allow_indels: no
 type: MirbaseHairpinAnnotation
 name: hairpins
 tool: bbmap
-db: /some/path/to/hairpin.annotation.db
+db: /some/path/to/hairpin.annotation.fasta
 max_3p_mismatches: 0
 max_non_3p_mismatches: 0
 allow_indels: no
@@ -115,7 +116,7 @@ allow_indels: no
 type: BiomartOtherRNAAnnotation
 name: other
 tool: bbmap
-db: /some/path/to/otherRNAs.annotation.db
+db: /some/path/to/otherRNAs.annotation.fasta
 max_3p_mismatches: 0
 max_non_3p_mismatches: 0
 allow_indels: no
