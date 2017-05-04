@@ -2206,12 +2206,17 @@ class ShortSeqs(dict):
 
         This adds an extra column representing the reverse miR annotation, in
         which the query sequence is miRBase mature miRs, and the reference
-        sequences is our compressed reads
+        sequences is our compressed reads.
+
+        If a normal "forward" annotation is present, then *no* reverse
+        annotation will be performed.
 
         Arguments:
             annotation_alignment: A single AnnotationAlignment.
             species (str): The species under investigation.
         """
+
+
         annotation_cls = annotation_alignment.annotation_cls
         assert(annotation_cls == MirbaseMirReverseAnnotation)
         for hit in annotation_alignment.alignment_execution.hits_full_len_100_perc_core():
@@ -2219,7 +2224,24 @@ class ShortSeqs(dict):
             # a full length perfect match.
             if (hit.reference_start < hit.reference_end):
 
-                short_seq = self[hit.reference_sequence_name]
+                try:
+                    short_seq = self[hit.reference_sequence_name]
+                except KeyError:
+                    # In cases where we are using alignment results that were
+                    # generated outside of the current execution of Prost
+                    # (perhaps with less stringent min seq count), we may find
+                    # hits whose query sequences have been removed from
+                    # ShortSeqs due to low seq count.  In that case, simply
+                    # continue.
+                    continue
+
+                if any(a.__class__ == MirbaseMirAnnotation for a in
+                        short_seq.annotations):
+                    # This short_seq already has a forward annotation, do not
+                    # give it a reverse annotation.
+                    # Preventing rev_annos when fwd_annos exist in gen_loc_bins
+                    # is implemented elsewhere, in mirbase_mir_reverse_annotations().
+                    continue
 
                 annotation = annotation_cls(hit, species)
                 if annotation not in short_seq.annotations:
@@ -2456,7 +2478,7 @@ class AnnotationBins(Bins):
         """
         super(AnnotationBins, self).__init__(short_seqs_singleton)
         self._gen_loc_bins = gen_loc_bins
-        self._bins_indexed_by_annotations = {}
+        self._bins_indexed_by_annotations_names = {}
         self.arm_5p_3p_pairs = []
         self._debug_seq_attempted_binned_count = 0
 
@@ -2485,7 +2507,8 @@ class AnnotationBins(Bins):
                     self._idx_prefix + str(self._current_idx),
                     annotations)
         super(AnnotationBins, self)._start_bin(main_short_seq, bn)
-        self._bins_indexed_by_annotations[annotations] = bn
+        annotations_names = tuple(a.name for a in annotations)
+        self._bins_indexed_by_annotations_names[annotations_names] = bn
 
         # And of course, add gen_loc_bin's joining members as well
         for short_seq_str in gen_loc_bin.joining_short_seq_strs:
@@ -2515,6 +2538,8 @@ class AnnotationBins(Bins):
             See _start_bin().
         """
         # Sort by short_seq_str for reproducibility.
+
+        # First pass - start with forward annotations only.
         for gen_loc_bin in sorted(self._gen_loc_bins,
                         key=operator.attrgetter('main_short_seq_str')):
 
@@ -2524,14 +2549,52 @@ class AnnotationBins(Bins):
 
             species_mir_annos = \
                 gen_loc_bin.mirbase_mir_annotations(self._short_seqs)[SPECIES_IDX]
+            species_mir_annos_names = tuple(a.name for a in species_mir_annos)
+
             if species_mir_annos == ():
-                # Skip gen_loc_bins with empty species_mir_annotations
+                # Doesn't have normal in_species forward annotations. Skip.
                 continue
-            bn = self._bins_indexed_by_annotations.get(species_mir_annos, None)
+
+            bn = self._bins_indexed_by_annotations_names.get(
+                    species_mir_annos_names, None)
             if bn:
                 self._add_to_bin(gen_loc_bin, bn)
             else:
                 self._start_bin(gen_loc_bin, species_mir_annos)
+
+        # Second pass - reverse annotations time
+        for gen_loc_bin in sorted(self._gen_loc_bins,
+                        key=operator.attrgetter('main_short_seq_str')):
+
+            if self._short_seqs[gen_loc_bin.main_short_seq_str].is_no_hit:
+                # Just in case, adding a short circuit here just in case.
+                continue
+
+            species_mir_annos = \
+                gen_loc_bin.mirbase_mir_annotations(self._short_seqs)[SPECIES_IDX]
+            species_mir_rev_annos = \
+                gen_loc_bin.mirbase_mir_reverse_annotations(self._short_seqs)[SPECIES_IDX]
+            species_mir_rev_annos_names = tuple(a.name for a in species_mir_rev_annos)
+
+            if species_mir_annos != ():
+                # Has normal in_species forward annotations. Already done in
+                # first pass.  Skip.
+                continue
+            elif species_mir_rev_annos == ():
+                # Has neither forward or reverse in_species annos.  Skip.
+                continue
+            else:
+                # Doesn't have foward, but does have reverse in_species annos. Use that.
+                pass
+
+            bn = self._bins_indexed_by_annotations_names.get(
+                    species_mir_rev_annos_names, None)
+            if bn:
+                self._add_to_bin(gen_loc_bin, bn)
+            else:
+                print("debug Wow, found a rev_anno_only bin_starter! gen_loc_bin.idx = {}, gen_loc_bin.main_short_seq_str = {}".format(gen_loc_bin.idx, gen_loc_bin.main_short_seq_str))
+                self._start_bin(gen_loc_bin, species_mir_rev_annos)
+
 
         # Choose the highest sum_norm seq from each bin to be each bin's
         # main_short_seq preferring low designations over others.
@@ -2551,11 +2614,11 @@ class AnnotationBins(Bins):
 
         arm_5p_annos = {}
         arm_3p_annos = {}
-        for (annos, bn) in self._bins_indexed_by_annotations.iteritems():
-            if len(annos) != 1:
+        for (annos_names, bn) in self._bins_indexed_by_annotations_names.iteritems():
+            if len(annos_names) != 1:
                 continue
-            anno = annos[0]
-            m = re.search(r'(.*)-([53]p$)', anno.name, re.IGNORECASE)
+            anno_name = annos_names[0]
+            m = re.search(r'(.*)-([53]p$)', anno_name, re.IGNORECASE)
             if m and len(m.groups()) == 2:
                 name, arm = m.groups()
                 if arm == '5p':
@@ -3055,8 +3118,33 @@ class Bin(SlotPickleMixin):
         return self._mirbase_annotations(short_seqs, MirbaseMirAnnotation)
 
     def mirbase_mir_reverse_annotations(self, short_seqs):
-        """See self._mirbase_annotations()."""
-        return self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
+        """See self._mirbase_annotations().
+
+        Note:
+            If there exists an in_species normal "forward" annotation, then
+            there we define that there is no in_species reverse annotation.
+
+            If there exists an other_species normal "forward" annotation, then
+            there we define that there is no other_species reverse annotation.
+        """
+        # return self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
+
+        fwd_annos = self._mirbase_annotations(short_seqs, MirbaseMirAnnotation)
+        rev_annos = self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
+        fwd_annos_in_species, fwd_annos_other_species = fwd_annos
+        rev_annos_in_species, rev_annos_other_species = rev_annos
+
+        if len(fwd_annos_in_species) > 0:
+            # there are in_species forward annotations, empty the reverse annotations
+            rev_annos_in_species = ()
+        if len(fwd_annos_other_species) > 0:
+            # there are other_species forward annotations, empty the reverse annotations
+            rev_annos_other_species = ()
+
+        # Reconsitute the reverse annotations
+        rev_annos = (rev_annos_in_species, rev_annos_other_species)
+
+        return rev_annos
 
     def mirbase_hairpin_annotations(self, short_seqs):
         """See self._mirbase_annotations()."""
@@ -4287,11 +4375,11 @@ class Output(object):
             # Note that this is HARDCODED because it's easier for this
             # particular case (the header names are not set in stone for now...)
             idx_designation = header.index('Designations')
-            idx_anno_in_species_hairpin = 7
+            idx_anno_in_species_hairpin = 9
             idx_anno_in_species_miR = 5
-            idx_anno_other_species_hairpin = 8
+            idx_anno_other_species_hairpin = 10
             idx_anno_other_species_miR = 6
-            idx_anno_other_species_ncRNA = 9
+            idx_anno_other_species_ncRNA = 11
 
             # Ambiguous this_species mir and hairpin annotations
             header.append('{}_miRNA_ambiguous?'.format(conf.general.species))
@@ -4589,8 +4677,8 @@ class Output(object):
             #
             # Note that this is HARDCODED because it's easier for this
             # particular case (the header names are not set in stone for now...)
-            idx_anno_in_species_hairpin = 4
-            idx_anno_in_species_miR = 2
+            idx_anno_in_species_hairpin = 5
+            idx_anno_in_species_miR = 3
 
             # Samples
             # i.e. sample, _norm
@@ -4618,21 +4706,28 @@ class Output(object):
                 row = [bn.idx, bn.main_short_seq_str]
 
                 # MainSeqMatchesAnnotationFile
-                mir_species_annos = bn.mirbase_mir_annotations(short_seqs)[0]
+                mir_species_annos = bn.mirbase_mir_annotations(short_seqs)[SPECIES_IDX]
+                mir_species_rev_annos = bn.mirbase_mir_reverse_annotations(short_seqs)[SPECIES_IDX]
                 if conf.general.mature_mir_annotation_fasta:
                     if len(mir_species_annos) > 1:
                         # multiple annotations
                         row.append('Multiple')
-                    elif len(mir_species_annos) == 0:
-                        # none - should be impossible?
-                        raise ControlFlowException, \
-                            "ERR408: Shouldn't be possible to reach here."
-                    else:
+                    elif len(mir_species_annos) == 1:
                         anno = mir_species_annos[0].name
                         if mature_mir_anno_dict[anno] == bn.main_short_seq_str:
                             row.append('Yes')
                         else:
                             row.append('No')
+                    elif len(mir_species_annos) == 0:
+                        if len(mir_species_rev_annos) > 0:
+                            row.append('Reverse')
+                        else:
+                            # none - should be impossible?
+                            raise ControlFlowException, \
+                                "ERR408: Shouldn't be possible to reach here."
+                    else:
+                        raise ControlFlowException, \
+                            "ERR407: Shouldn't be possible to reach here."
 
                 # Annotations
                 for annotation_alignment in alignments.annotation_alignments:
