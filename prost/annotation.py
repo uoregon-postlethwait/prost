@@ -30,6 +30,8 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 # Backported python 3.4 Enums, for annotations.  From package enum34.
 from enum import Enum
 
+# Pretty print the annotations
+import pprint
 
 ###############
 ### Classes ###
