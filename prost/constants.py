@@ -143,14 +143,8 @@ INDEL_INDICATOR =                                                       "g"
 
 # Executables
 EXECUTABLE_PYTHON =                                                'python'
-# TEMPORARY!!!!
-# TEMPORARY!!!!
-# TEMPORARY!!!!
-# TEMPORARY!!!!
-# TEMPORARY!!!!
-# TEMPORARY!!!!
-EXECUTABLE_BBMAP =                                        'bbmap.sh'
-#EXECUTABLE_BBMAP =                                        'bbmapskimmer.sh'
+#EXECUTABLE_BBMAP =                                        'bbmap.sh'
+EXECUTABLE_BBMAP =                                        'bbmapskimmer.sh'
 
 # Prost log filename
 LOG_FILENAME =                                                  'prost.log'
