@@ -4739,6 +4739,9 @@ class Output(object):
                     elif annotation_cls == MirbaseMirAnnotation:
                         for annos in bn.mirbase_mir_annotations(short_seqs):
                             row.append(",".join(a.name for a in annos))
+                    elif annotation_cls == MirbaseMirReverseAnnotation:
+                        for annos in bn.mirbase_mir_reverse_annotations(short_seqs):
+                            row.append(",".join(a.name for a in annos))
                     elif annotation_cls == MirbaseHairpinAnnotation:
                         for annos in bn.mirbase_hairpin_annotations(short_seqs):
                             row.append(",".join(a.name for a in annos))
