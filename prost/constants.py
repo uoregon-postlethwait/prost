@@ -143,8 +143,8 @@ INDEL_INDICATOR =                                                       "g"
 
 # Executables
 EXECUTABLE_PYTHON =                                                'python'
-#EXECUTABLE_BBMAP =                                        'bbmap.sh'
-EXECUTABLE_BBMAP =                                        'bbmapskimmer.sh'
+EXECUTABLE_BBMAP =                                               'bbmap.sh'
+EXECUTABLE_BBMAPSKIMMER =                                 'bbmapskimmer.sh'
 
 # Prost log filename
 LOG_FILENAME =                                                  'prost.log'

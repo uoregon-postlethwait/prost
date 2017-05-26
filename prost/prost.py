@@ -4668,7 +4668,7 @@ class Output(object):
                 header.append('MainSeqMatchesAnnotationFile')
 
             # Annotations
-            header += self._headers_annotations(conf, alignments)
+            header += self._headers_annotations(conf, alignments, True)
 
             # "Extract" indexes by which to sort.  We'll be sorting first by the
             # in_species_hairpin, followed by the reverse of the in_species_miRNA.
