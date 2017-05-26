@@ -632,9 +632,6 @@ class BBMapAlignmentExecution(AlignmentExecution):
     def generate_command_line(self):
         """Concrete implementation of AlignmentExecution.generate_command_line()."""
 
-        # The command line string we will build up.
-        self._cline = [EXECUTABLE_BBMAP]
-
         # First define the default parameters.
         params = {
             "mdtag": BBMAP_OPT_DEFAULT_MDTAG,
@@ -699,6 +696,12 @@ class BBMapAlignmentExecution(AlignmentExecution):
         #        float(self._min_seq_length)))
         params['minid'] = TODO_HARDCODED_MINID
         params['idfilter'] = params['minid']
+
+        # The command line string we will build up.
+        if is_a_fasta_file:
+            self._cline = [EXECUTABLE_BBMAP]
+        else:
+            self._cline = [EXECUTABLE_BBMAPSKIMMER]
 
         # Fourth, generate the command line string.
         for key in params.iterkeys():
