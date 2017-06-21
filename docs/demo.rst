@@ -44,9 +44,8 @@ of these requirements.  The following dependencies are provided:
     (``fa/hairpin_miRBase21.fa.gz``).
   * A FASTA file of "other RNAs" (e.g. snoRNAs) found in zebrafish, provided by
     Ensembl BioMart release 79 (``fa/BioMart_Dre79_otherRNA.fa.gz``).
-* A script (``scripts/setup.sh``) which builds annotation BBMap databases from 
-  the annotation FASTA files described above, as well as uncompresses the 
-  samples files described above.
+* A script (``scripts/setup.sh``) which uncompresses the sample and annotation
+  FASTA files described above.
 
 Quick Start
 ===========
@@ -82,10 +81,10 @@ Quick Start
    ``bbmap.sh`` the full PATH to the ``ref=`` argument in the following step.)::
 
         # Using wget:
-        wget ftp://ftp.ensembl.org/pub/release-83/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
+        wget ftp://ftp.ensembl.org/pub/release-89/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
         # Or using curl:
-        curl -O ftp://ftp.ensembl.org/pub/release-83/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
+        curl -O ftp://ftp.ensembl.org/pub/release-89/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
         
 #. Build a BBMap database of the zebrafish reference genome::
 
@@ -189,21 +188,22 @@ need to be edited):
    [General]
    species: dre
    samples_filelist: samples_filelist
+   mature_mir_annotation_fasta: BBMap/mature_miRBase21.fa
 
    [GenomeAlignment]
    db: BBMap/Danio_rerio.GRCz10.dna.toplevel
 
    [AnnotationAlignment1]
    type: MirbaseMirAnnotation
-   db: BBMap/mature_miRBase21
+   db: BBMap/mature_miRBase21.fa
 
    [AnnotationAlignment2]
    type: MirbaseHairpinAnnotation
-   db: BBMap/hairpin_miRBase21
+   db: BBMap/hairpin_miRBase21.fa
 
    [AnnotationAlignment3]
    type: BiomartOtherRNAAnnotation
-   db: BBMap/BioMart_Dre79_otherRNA
+   db: BBMap/BioMart_Dre79_otherRNA.fa
 
 After you have made those changes, simply run *Prost!* again:
 

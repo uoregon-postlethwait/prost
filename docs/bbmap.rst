@@ -44,7 +44,7 @@ Building a BBMap database is relatively straightforward.
 
 1. Download a genome or annotation FASTA file.
 
-   * For example, Ensembl provides the `zebrafish genome <ftp://ftp.ensembl.org/pub/release-79/fasta/danio_rerio/dna/Danio_rerio.Zv9.dna.toplevel.fa.gz>`_.
+   * For example, Ensembl provides the `zebrafish genome <ftp://ftp.ensembl.org/pub/release-89/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz>`_.
    * For example, mirBase provides a `miRNA hairpin annotation FASTA file <ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz>`_.
 2. Unzip the zipped FASTA file.  This can sometimes be accomplished by simply double
    clicking on the zipped filename.  This can also be accomplished via
@@ -52,15 +52,15 @@ Building a BBMap database is relatively straightforward.
 
    .. code-block:: bash
 
-      gunzip Danio_rerio.Zv9.dna.toplevel.fa.gz
+      gunzip Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
 3. Create the BBMap database.  Though there are several ways to do this,
    the following approach is known to work with this demo:
 
    .. code-block:: bash
 
-      bbmap.sh k=7 path=BBMap/Danio_rerio.Zv9.dna.toplevel \
-          ref=Danio_rerio.Zv9.dna.toplevel.fa.gz
+      bbmap.sh k=7 path=BBMap/Danio_rerio.GRCz10.dna.toplevel \
+          ref=Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
    This may take several minutes depending on your hardware.
 
