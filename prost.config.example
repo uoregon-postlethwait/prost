@@ -60,6 +60,8 @@ species: mmu
 #   c) if the Bin's MainSequence does not exactly match the annotation file's
 #      annotated sequence, then the column is marked "No".
 # This column helps users assess the quality of the annotation file used.
+# NOTE: This field will not be optional in the future.  This should be
+# set to be the same as the "db" field in the [AnnotationAlignment1] section.
 # mature_mir_annotation_fasta: /some/path/to/mature_miR.annotation.fa
 
 
