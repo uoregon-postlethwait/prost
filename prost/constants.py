@@ -45,8 +45,8 @@ DEFAULT_MIN_SEQ_COUNT =                                                  30
 DEFAULT_WIGGLE =                                                          5
 
 # Minimum and maximum sequence length allowed for a short sequence.
-DEFAULT_MIN_SEQ_LENGTH =                                                 14
-DEFAULT_MAX_SEQ_LENGTH =                                                 28
+DEFAULT_MIN_SEQ_LENGTH =                                                 17
+DEFAULT_MAX_SEQ_LENGTH =                                                 25
 
 # The maximum number of threads (processors) to use for various operations.
 DEFAULT_MAX_THREADS =                                                     4

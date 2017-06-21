@@ -62,9 +62,14 @@ overview of the content of the other pages.
 Installation of *Prost!*
 ========================
 
-Installation via pip is probably the easiest way to get *Prost!* installed::
+Installation via pip is probably the easiest way to get *Prost!* installed. 
+To install to your home directory::
 
-    pip install prost
+    pip install prost --user
+
+Or you can install systemwide (if you have sudo privileges)::
+
+    sudo pip install prost
 
 Alternatively, you can download a release and install directly with setup.py::
     
@@ -144,22 +149,23 @@ Samples FASTA files
   samples.  Quality filtered and barcodes or adapters removed so that the only
   sequences remaining in the files are full, high quality, short sequences.
 
-BBMap databases
-```````````````
+Reference genome BBMap database
+```````````````````````````````
 
-Four BBMap databases are required by *Prost!*.  See :ref:`building_bbmap_dbs`
-for instructions on building a BBMap database.
+*Prost!* requires a BBMap database of a reference genome of your species of
+interest (or a closely related species). The reference genome does not need to
+be annotated or assembled to high N50s. We have tested *Prost!* on PE250
+Illumina sequencing reads on a non-model organism with good results. See
+:ref:`building_bbmap_dbs` for instructions on building a BBMap database.
 
-The following databases are required by *Prost*!:
+Annotation FASTA files
+``````````````````````
 
-* A reference genome BBMap database.  The reference genome does not need to be
-  annotated or assembled to high N50s.  We have tested *Prost!* on PE250
-  Illumina sequencing reads on a non-model organism with good results.
-* Annotation BBMap databases.  NOTE: At this time, nucleotides uracil and
-  thymine must be coded as **T**'s (and *not* as **U**'s) in the annotation
-  FASTA files.
+Three annotation FASTA files are required by *Prost!*. (NOTE: At this time,
+nucleotides uracil and thymine must be coded as **T**'s (and *not* as **U**'s)
+in the annotation FASTA files.)
 
-  * A database of annotated mature microRNAs. This is usually built directly from
+  * A FASTA file of annotated mature microRNAs. This is usually built directly from
     `miRBase's "mature.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/mature.fa.gz>`_ 
     (or from an augmented version of that FASTA file), and should contain
     mature miRNAs from several species (including the species you are
@@ -169,11 +175,11 @@ The following databases are required by *Prost*!:
 
         >dre-miR-451 MIMAT0001634 Danio rerio miR-451
         AAACCGTTACCATTACTGAGTT
-  * A database of annotated microRNA hairpins. This is usually built directly from
+  * A FASTA file of annotated microRNA hairpins. This is usually built directly from
     `miRBase's "hairpin.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz>`_ 
     (or from an augmented version of that FASTA file), following the same
     conventions for the mature miRNAs described above.
-  * A database of annotated "other RNAs" (e.g snoRNAs and lincRNAs) for the
+  * A FASTA file of annotated "other RNAs" (e.g snoRNAs and lincRNAs) for the
     species under study. See :doc:`biomart`.  Following those instructions will
     produce correctly formatted FASTA files (the FASTA header format is:
     ``>geneName|biotype|geneID``).
@@ -215,8 +221,9 @@ the **GenomeAlignment** section needs to specify the following:
 * **name**: A user-defined name for the alignment (default: ``genome``).
 * **tool**: The alignment tool being used (default: ``bbmap``; currently only
   BBMap is supported).
-* **db**: The sequence database (e.g. a BBMap database) to be used for the Genome
-  Alignment.
+* **db**: The BBMap database of the reference genome (e.g. a BBMap database) to
+  be used for the Genome Alignment.  (Note that for the AnnotationAlignment sections below,
+  this **db** field must point to a FASTA file instead of a BBMap database!)
 * **max_3p_mismatches**: The maximum number of mismatches allowed for each sequence
   alignment hit on the 3´ end of the hit (default: ``3``)
 * **max_non_3p_mismatches**: The maximum number of mismatches allowed for each sequence
@@ -240,15 +247,16 @@ Below is an example of a minimal configuation file:
   [GenomeAlignment]
   name: genome
   tool: bbmap
-  db: /path/to/databases/Danio_rerio.Zv9.dna.toplevel
+  db: /path/to/databases/Danio_rerio.GRCz10.dna.toplevel
   max_3p_mismatches: 3
   max_non_3p_mismatches: 2
   allow_indels: yes
 
 The configuration file as described above will not perform any annotations.
 See the file ``prost.config`` for a working example of annotation alignment
-sections.  The annotation alignment sections follow the same structure as the
-**GenomeAlignment** section.
+sections.  The **AnnotationAlignment** sections follow the same structure as
+the **GenomeAlignment** section; the only difference being that the **db**
+field must point to a FASTA file instead.
 
 Currently, (nearly) every option in the **General** section of the
 configuration file can also be controlled via command line flags.  See
@@ -269,21 +277,22 @@ need to be edited):
    [General]
    species: dre
    samples_filelist: samples_filelist
+   mature_mir_annotation_fasta: BBMap/mature_miRBase21.fa
 
    [GenomeAlignment]
-   db: BBMap/Danio_rerio.Zv9.dna.toplevel
+   db: BBMap/Danio_rerio.GRCz10.dna.toplevel
 
    [AnnotationAlignment1]
    type: MirbaseMirAnnotation
-   db: BBMap/mature_miRBase21
+   db: BBMap/mature_miRBase21.fa
 
    [AnnotationAlignment2]
    type: MirbaseHairpinAnnotation
-   db: BBMap/hairpin_miRBase21
+   db: BBMap/hairpin_miRBase21.fa
 
    [AnnotationAlignment3]
    type: BiomartOtherRNAAnnotation
-   db: BBMap/BioMart_Dre79_otherRNA
+   db: BBMap/BioMart_Dre89_otherRNA.fa
 
 After you have made those changes, simply run *Prost!* again:
 
@@ -302,6 +311,7 @@ Funding
 * Mechanisms of Sex Determination in Zebrafish; NIH - National Institute of General Medical Sciences (R01 GM085318)
 * Developmental Mechanisms for the Evolution of Bone Loss; NIH - National Institute on Aging (R01 AG031922)
 * Signaling Hierarchies in Vertebrate Development: CP1:  A zebrafish model of phenotypic variation associated with Fraser syndrome; NIH - Eunice Kennedy Shriver National Institute of Child Health and Human Development (P01 HD22486)
+* Antarctic Fish and MicroRNA Control of Development and Physiology; NSF - Office of Polar Program (OPP #154338)
 
 .. Hyperlinks
 .. _Python: http://www.python.org/
