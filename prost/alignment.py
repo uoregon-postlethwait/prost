@@ -19,6 +19,7 @@ from __future__ import division
 from prost.constants import *
 from prost.common import (ExecutionException,
                           UnmappedAlignmentException,
+                          ConfigurationException,
                           pmsg,
                           perr,
                           SlotPickleMixin,
