@@ -135,9 +135,11 @@ System and software dependencies
 Configuration files
 ```````````````````
 
-* The *Prost!* configuration file (default ``prost.config``). This is
-  a basic configuration file that is well documented and should be easy to
-  quickly comprehend and edit.
+* The *Prost!* configuration file (default ``prost.config``).  We recommend
+  you download our example *Prost!* configuration file 
+  (`prost.config.example <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/prost.config.example>`_)
+  and modify it to suit your experiments.  The example configuration file is
+  well documented and should be easy to quickly comprehend and edit.
 * A list of high throughput sequencing FASTA format files of samples
   (default ``samples_filelist``). The format is ``fileName descriptiveName``,
   with one samples file per line.  
@@ -165,25 +167,27 @@ Three annotation FASTA files are required by *Prost!*. (NOTE: At this time,
 nucleotides uracil and thymine must be coded as **T**'s (and *not* as **U**'s)
 in the annotation FASTA files.)
 
-  * A FASTA file of annotated mature microRNAs. This is usually built directly from
-    `miRBase's "mature.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/mature.fa.gz>`_ 
-    (or from an augmented version of that FASTA file), and should contain
-    mature miRNAs from several species (including the species you are
-    studying).  The FASTA header file must follow miRBase's convention of
-    prefixing each miRNA with a three letter species abbreviation and a dash.
-    For example::
+* A FASTA file of annotated mature microRNAs. This is usually built directly from
+  `miRBase's "mature.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/mature.fa.gz>`_ 
+  (or from an augmented version of that FASTA file), and should contain
+  mature miRNAs from several species (including the species you are
+  studying).  The FASTA header file must follow miRBase's convention of
+  prefixing each miRNA with a three letter species abbreviation and a dash.
+  For example::
 
-        >dre-miR-451 MIMAT0001634 Danio rerio miR-451
-        AAACCGTTACCATTACTGAGTT
-  * A FASTA file of annotated microRNA hairpins. This is usually built directly from
-    `miRBase's "hairpin.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz>`_ 
-    (or from an augmented version of that FASTA file), following the same
-    conventions for the mature miRNAs described above.
-  * A FASTA file of annotated "other RNAs" (e.g snoRNAs and lincRNAs) for the
-    species under study. See :doc:`biomart`.  Following those instructions will
-    produce correctly formatted FASTA files (the FASTA header format is:
-    ``>geneName|biotype|geneID``).
-
+      >dre-miR-451 MIMAT0001634 Danio rerio miR-451
+      AAACCGTTACCATTACTGAGTT
+* A FASTA file of annotated microRNA hairpins. This is usually built directly from
+  `miRBase's "hairpin.fa" <ftp://mirbase.org/pub/mirbase/CURRENT/hairpin.fa.gz>`_ 
+  (or from an augmented version of that FASTA file), following the same
+  conventions for the mature miRNAs described above.
+* A FASTA file of annotated "other RNAs" (e.g snoRNAs and lincRNAs) for the
+  species under study, or a related species.   See :doc:`biomart`.  Following
+  those instructions will produce correctly formatted FASTA files (the FASTA
+  header format is: ``>geneName|biotype|geneID``). *Prost!* requires a BioMart
+  file because it usually provides useful annotations.  If you do not wish to
+  supply a real BioMart file, simply download and point *Prost!* at the
+  following fake BioMart file: `fake_biomart_file.fa <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/fake_biomart_file.fa>`_
 
 *Prost!* Output
 ```````````````
@@ -214,7 +218,9 @@ a configuration file, and command line flags.  Sensible defaults are provided,
 so in general very few configuration options will be needed by the user.
 
 A minimal configuration file (by default named ``prost.config``) is required by
-*Prost!*.  At minumum, the configuration file needs to specify the species
+*Prost!* (you can download and modify our example configuration file here: 
+`prost.config.example <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/prost.config.example>`_). 
+At minumum, the configuration file needs to specify the species
 under study (e.g. 'mmu' for mouse) in the **General** section.  In addition,
 the **GenomeAlignment** section needs to specify the following:
 
@@ -253,10 +259,11 @@ Below is an example of a minimal configuation file:
   allow_indels: yes
 
 The configuration file as described above will not perform any annotations.
-See the file ``prost.config`` for a working example of annotation alignment
-sections.  The **AnnotationAlignment** sections follow the same structure as
-the **GenomeAlignment** section; the only difference being that the **db**
-field must point to a FASTA file instead.
+See the file `prost.config.example <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/prost.config.example>`_ 
+for a working example of annotation alignment sections.  The
+**AnnotationAlignment** sections follow the same structure as the
+**GenomeAlignment** section; the only difference being that the **db** field
+must point to a FASTA file instead.
 
 Currently, (nearly) every option in the **General** section of the
 configuration file can also be controlled via command line flags.  See
@@ -298,7 +305,7 @@ After you have made those changes, simply run *Prost!* again:
 
 .. code-block:: bash
 
-   python prost
+   prost
 
 Funding
 =======

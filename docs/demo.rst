@@ -43,7 +43,7 @@ of these requirements.  The following dependencies are provided:
   * A FASTA file of microRNA hairpins in miRBase release 21
     (``fa/hairpin_miRBase21.fa.gz``).
   * A FASTA file of "other RNAs" (e.g. snoRNAs) found in zebrafish, provided by
-    Ensembl BioMart release 79 (``fa/BioMart_Dre79_otherRNA.fa.gz``).
+    Ensembl BioMart (``fa/BioMart_Dre_otherRNA.fa.gz``).
 * A script (``scripts/setup.sh``) which uncompresses the sample and annotation
   FASTA files described above.
 
@@ -54,7 +54,7 @@ Quick Start
 
    * :ref:`system_and_software_dependencies`.
    * You have *Prost!* installed (see :ref:`prost_installation`)
-   * You have `Java 7 <http://www.oracle.com/technetwork/java/javase/downloads/jre7-downloads-1880261.html>`_ installed (and enabled).
+   * You have `Java 7 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or `Java 8 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ installed (and enabled).
    * You have BBMap installed (see :ref:`bbmap_installation`)
 #. If you have a slow internet connection, you may wish to begin downloading
    the zebrafish reference genome (see step 5).
@@ -81,10 +81,10 @@ Quick Start
    ``bbmap.sh`` the full PATH to the ``ref=`` argument in the following step.)::
 
         # Using wget:
-        wget ftp://ftp.ensembl.org/pub/release-89/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
+        wget ftp://ftp.ensembl.org/pub/current_fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
 
         # Or using curl:
-        curl -O ftp://ftp.ensembl.org/pub/release-89/fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
+        curl -O ftp://ftp.ensembl.org/pub/current_fasta/danio_rerio/dna/Danio_rerio.GRCz10.dna.toplevel.fa.gz
         
 #. Build a BBMap database of the zebrafish reference genome::
 
@@ -181,7 +181,8 @@ are using different genome or annotation databases.
 
 Below is a snippet of the configuration file that shows you roughly what will
 need to be edited (some additional fields are shown below for context, but do not
-need to be edited):
+need to be edited).  (Note that you can also download an example *Prost!* configuration 
+file here: `prost.config.example <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/prost.config.example>`_).
 
 .. code-block:: ini
 
