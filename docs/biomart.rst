@@ -7,6 +7,9 @@ Generating a BioMart Other RNA annotations BBMap database
 This page describes how to generate an annotations database containing "Other
 RNAs" such as snoRNAs and lncRNAs.
 
+If you do not wish to supply a real BioMart file, simply download and point 
+*Prost!* at the following fake BioMart file: `fake_biomart_file.fa <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/fake_biomart_file.fa>`_
+
 Download the sequences from BioMart
 ```````````````````````````````````
 
