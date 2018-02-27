@@ -418,12 +418,20 @@ class AlignmentExecution(object):
                 results_file = "alignment_results_{}_{}.sam".format(
                         conf_alignment['tool'].lower(), conf_alignment['name'])
 
+        # Set the log file (based off the name of the results_file)
+        if results_file[-4:] == '.sam':
+            log_file = results_file[0:-4] + '.log'
+        else:
+            log_file = results_file + '.log'
+
         # Initialize
         self._cline = ""
         self._reference_seqs_path = reference_seqs_path
         self._query_seqs_path = query_seqs_path
         self._results_file = results_file
+        self._log_file = log_file
         self._max_threads = conf.general.max_threads
+        self._max_memory = conf.general.max_memory
         self._min_seq_length = conf.general.min_seq_length
         self.max_3p_mismatches = conf_alignment['max_3p_mismatches']
         self.max_non_3p_mismatches = conf_alignment['max_non_3p_mismatches']
@@ -466,10 +474,18 @@ class AlignmentExecution(object):
             pmsg(wrapper.fill("{}".format(self.command_line)))
 
         if not skip:
-            if (subprocess.call(cline) > 0):
-                raise ExecutionException, \
-                        ("Execution of the following command failed:\n{}".
-                                format(self.command_line))
+            try:
+                # Don't buffer writes to the log.
+                bufsize = 1
+                with open(self._log_file, 'w', bufsize) as f:
+                    f.write(subprocess.check_output(cline, stderr=subprocess.STDOUT))
+            except subprocess.CalledProcessError as e:
+                with open(self._log_file, 'w') as f:
+                    f.write(e.output)
+                msg = ("\n\nCheck the log file {} for more detail.\n"
+                        "Execution of the following command failed:\n"
+                        "\n{}\n\n".format(self._log_file, self.command_line))
+                raise ExecutionException(msg)
 
     def hits_filtered(self):
         """Generator that walks through each alignment hit, with some
@@ -622,7 +638,7 @@ class BBMapAlignmentExecution(AlignmentExecution):
     """A BBMap search.
 
     Example:
-        bbmapskimmer.sh mdtag=t in="search.fa" maxindel=2
+        bbmapskimmer.sh -Xmx64g mdtag=t in="search.fa" maxindel=2
         out="alignment_results_bbmap_genome" slow=t outputunmapped=f idtag=f
         minid=0.50 ssao=f strictmaxindel=t usemodulo=f cigar=t sssr=0.25
         threads=12 path="/some/path/to/a/BBMap/DB" trimreaddescriptions=t
@@ -703,6 +719,9 @@ class BBMapAlignmentExecution(AlignmentExecution):
             self._cline = [EXECUTABLE_BBMAP]
         else:
             self._cline = [EXECUTABLE_BBMAPSKIMMER]
+
+        # Next, add on the memory manually...
+        self._cline.append("-Xmx{}g".format(str(self._max_memory)))
 
         # Fourth, generate the command line string.
         for key in params.iterkeys():
