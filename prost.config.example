@@ -9,6 +9,10 @@ species: mmu
 # The maximum number of threads (processors) to use for various operations.
 # max_threads: 4
 
+# The maximum amount of memory (in GB) to allocate to the aligner.
+# If left unset, Prost will allocate 85% of your system memory.
+# max_memory: 128
+
 # The prefix to use for Prost! output filenames.
 # output_file_prefix: prost_output
 
