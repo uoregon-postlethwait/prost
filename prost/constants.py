@@ -230,6 +230,7 @@ CONFIGURATION_POSITIVE_FIELDS =                ['indelnt_penalty_multiplier',
                                                 'min_seq_length',
                                                 'max_seq_length',
                                                 'max_threads',
+                                                'max_memory',
                                                 'max_locations_to_report',
                                                 'max_locations_allowed']
 

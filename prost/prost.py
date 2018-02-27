@@ -105,10 +105,20 @@ import operator
 # For log fold changes (e.g. in arm_switch_candidates)
 import math
 
+# For determining system memory size
+import psutil
 
 #################
 ### Functions ###
 #################
+
+def get_85perc_system_memory():
+    """Returns an int representing roughly 85% of the system memory.
+
+    Returns:
+        int: 85% of the system memory.
+    """
+    return int(psutil.virtual_memory().total * 0.85 / 1024**3)
 
 def setup_logging(conf, time_start):
     """Setup prost.log logging.
@@ -598,6 +608,16 @@ class Configuration(object):
                 action = 'store',
                 dest = 'max_threads',
                 default = DEFAULT_MAX_THREADS,
+                required = False)
+
+        self._argparser.add_argument('--max-memory',
+                help = """The maximum amount of memory (in GB) to allocate to
+                the aligner.  If not set, defaults to 85 percent of system memory.""",
+                metavar = 'NUM',
+                type = int,
+                action = 'store',
+                dest = 'max_memory',
+                default = get_85perc_system_memory(),
                 required = False)
 
         self._argparser.add_argument('--max-locations-to-report',
@@ -1162,6 +1182,14 @@ class ShortSeq(SlotPickleMixin):
             'no_hit_genomic_locations',
             'wiggle_fingerprints',
             'annotations',
+            'iso_5p',
+            'iso_3p',
+            'iso_add',
+            'iso_snp_seed',
+            'iso_snp_central_offset',
+            'iso_snp_central',
+            'iso_snp_supp',
+            'iso_snp',
             #'memo_seed_shifted',
             #'memo_seed_edited',
             #'memo_3p_supplementary_edited',
@@ -1229,6 +1257,14 @@ class ShortSeq(SlotPickleMixin):
         self.genomic_locations = []
         self.no_hit_genomic_locations = []
         self.annotations = []
+        self.iso_5p = 0
+        self.iso_3p = 0
+        self.iso_add = 0
+        self.iso_snp_seed = False
+        self.iso_snp_central_offset = False
+        self.iso_snp_central = False
+        self.iso_snp_supp = False
+        self.iso_snp = False
 
     def __repr__(self):
         """What to return when pretty printing."""
@@ -3484,11 +3520,11 @@ class GenLocBin(Bin):
 
             # Collect modifications for each genomic location
 
-            for gl_ss, gl_main in itertools.izip_longest(
-                    short_seq.genomic_locations, main_seq.genomic_locations):
+            for gl_main, gl_ss in itertools.izip_longest(
+                    main_seq.genomic_locations, short_seq.genomic_locations):
 
                 try:
-                    mod_thing = ModificationThing(gl_main, gl_ss)
+                    mod_thing = ModificationThing(gl_main, gl_ss, main_seq, short_seq)
                     mod_things.append(mod_thing)
                 except ModificationThingEncounteredNAlignment:
                     # Aligned to an 'N' (i.e. cigar has an 'M').
@@ -3692,7 +3728,7 @@ class ModificationThing(object):
         #                disagreements_list.add(prop)
         #return tuple(sorted(disagreements_list))
 
-    def __init__(self, main_hit, member_hit):
+    def __init__(self, main_hit, member_hit, main_seq, member_seq):
         """
         Arguments:
             main_hit (SamExtendedCigarAlignmentExecutionHit): The main hit
@@ -3702,6 +3738,12 @@ class ModificationThing(object):
             member_hit (SamExtendedCigarAlignmentExecutionHit): The member hit
                 (i.e. a gen_loc from a member of a GenLocBin) from which we are
                 retrieving mismatches w/r/t the main_hit.
+            main_seq (ShortSeq): The ShortSeq that owns the main_hit.
+                Yes, a little crusty, but we're adding this in for miRTop at
+                a later date.
+            member_seq (ShortSeq): The ShortSeq that owns the member_hit.
+                Yes, a little crusty, but we're adding this in for miRTop at
+                a later date.
         """
         # Initialize:
         self.is_seed_shifted = False
@@ -3722,9 +3764,9 @@ class ModificationThing(object):
         mm_coords = self._mismatches_coords(main_hit, member_hit)
 
         # Now set it in stone and discard mm_coords:
-        self._set_properties(mm_coords, main_hit, member_hit)
+        self._set_properties(mm_coords, main_hit, member_hit, main_seq, member_seq)
 
-    def _set_properties(self, mm_coords, main_hit, member_hit):
+    def _set_properties(self, mm_coords, main_hit, member_hit, main_seq, member_seq):
         """Instead of creating methods for each property, we simply
         precalculate them here.
 
@@ -3742,6 +3784,9 @@ class ModificationThing(object):
                 nt17 and the last matching nt.)
 
         Arguments:
+            mm_coords (int,): A list of coordinates of mismatches found in the
+                member_hit w/r/t the main_hit (i.e. the coordinates returned are
+                indexed relative to the main_hit).
             main_hit (SamExtendedCigarAlignmentExecutionHit): The main hit
                 (i.e. a gen_loc from a BinStarter) which we are using as a
                 proxy for the reference genome (since it is full_length 100%
@@ -3749,11 +3794,8 @@ class ModificationThing(object):
             member_hit (SamExtendedCigarAlignmentExecutionHit): The member hit
                 (i.e. a gen_loc from a member of a GenLocBin) from which we are
                 retrieving mismatches w/r/t the main_hit.
-            mm_coords (int,): A list of coordinates of mismatches found in the
-                member_hit w/r/t the main_hit (i.e. the coordinates returned are
-                indexed relative to the main_hit).
-
-
+            main_seq (ShortSeq): The ShortSeq that owns the main hit.
+            member_seq (ShortSeq): The ShortSeq that owns the member hit.
             """
 
         ## Bail and log if the BinStarter aligns to a region with an 'N'
@@ -3768,10 +3810,19 @@ class ModificationThing(object):
         # Note: Seed edited & 3p-supplementary edited are handled at the
         # ShortSeq level, not here at the hit level.
 
+        ## iso_5p ?
+        if self.is_seed_shifted:
+            member_seq.iso_5p = (main_hit.reference_start_with_clips - \
+                    member_hit.reference_start_with_clips)
+            if member_hit.on_minus_strand:
+                member_seq.iso_5p = -member_seq.iso_5p
+
         ## 3p mismatch?
         # TODO: consider adding 'S' and 'H' here as well?
+        # Recall, cigar_tokens_5pto3p look like this: ((1, 'X'), (18, '='), (2, 'X'))
         if member_hit.cigar_tokens_5pto3p[-1][1] == 'X':
             self.is_3p_mismatch = True
+            member_seq.iso_add = member_hit.cigar_tokens_5pto3p[-1][0]
         elif member_hit.cigar_tokens_5pto3p[-1][1] == '=':
             pass
         elif member_hit.cigar_tokens_5pto3p[-1][1] == 'M':
@@ -3786,6 +3837,9 @@ class ModificationThing(object):
                     member_hit.cigar_tokens_5pto3p[-1][1], main_hit,
                     member_hit))
 
+        ## These variables ('offset' and the 'member_last_matching_nt_3p_end')
+        ## are needed for subsequent classifications (e.g. 3p alt cut and other_edited and so forth...)
+
         ## Get offset: How many nts on 5p side the member_hit is offset from main_hit.
         offset = (member_hit.reference_start_with_clips -
                 main_hit.reference_start_with_clips)
@@ -3793,6 +3847,7 @@ class ModificationThing(object):
             offset = -offset
 
         ## Last matching 3p nucleotide for main:
+        ## (e.g. "22" for example)
         if main_hit.on_minus_strand:
             main_last_matching_nt_3p_end = (
                     main_hit.reference_start_with_clips
@@ -3806,6 +3861,7 @@ class ModificationThing(object):
                     + 1)
 
         ## Last matching 3p nucleotide for member:
+        ## (e.g. "22" for example)
         if member_hit.on_minus_strand:
             member_last_matching_nt_3p_end = (
                 member_hit.reference_start_with_clips
@@ -3825,6 +3881,11 @@ class ModificationThing(object):
         self.is_3p_alt_cut = not (
                 main_last_matching_nt_3p_end == member_last_matching_nt_3p_end)
 
+        ## iso_3p
+        if self.is_3p_alt_cut:
+            member_seq.iso_3p = (member_last_matching_nt_3p_end -
+                    main_last_matching_nt_3p_end)
+
         ## other edited?
         # If the mismatch is located outside of the seed region (nts 2-8),
         # or outside the 3p-supplemenary-region (nts 13-16), then it is
@@ -3840,6 +3901,24 @@ class ModificationThing(object):
                     (mm >= 17 and mm < member_last_matching_nt_3p_end)):
                 self.is_other_edited = True
                 break
+
+        # iso_snp_seed           -> SNP at NTs 2-7
+        # iso_snp_central_offset -> SNP at NT 8
+        # iso_snp_central        -> SNP at NTs 9-12
+        # iso_snp_supp           -> SNP at NTs 13-17
+        # iso_snp                -> SNP anywhere else.
+        for mm in mm_coords:
+            if (mm >= 2 and mm <= 7):
+                member_seq.iso_snp_seed = True
+            if (mm == 8):
+                member_seq.iso_snp_central_offset = True
+            if (mm >= 9 and mm <= 12):
+                member_seq.iso_snp_central = True
+            if (mm >= 13 and mm <= 17):
+                member_seq.iso_snp_supp = True
+            if ((mm == 1) or
+                (mm >= 18 and mm < member_last_matching_nt_3p_end)):
+                member_seq.iso_snp = True
 
     @classmethod
     def _mismatches_coords(self, main_hit, member_hit):
@@ -4065,6 +4144,9 @@ class Output(object):
             # Annotations
             header += self._headers_annotations(conf, alignments, True)
 
+            # miRTop columns
+            header += "iso_5p iso_3p iso_add iso_snp_seed iso_snp_central_offset iso_snp_central iso_snp_supp iso_snp".split()
+
             # Write
             header = "{}\n".format("\t".join(header))
             f.write(header)
@@ -4188,6 +4270,16 @@ class Output(object):
                                     annos.append(anno.name)
                             row.append(",".join(sorted(annos)))
 
+                # miRTop columns
+                mirtops = [short_seq.iso_5p, short_seq.iso_3p,
+                        short_seq.iso_add, short_seq.iso_snp_seed,
+                        short_seq.iso_snp_central_offset,
+                        short_seq.iso_snp_central, short_seq.iso_snp_supp,
+                        short_seq.iso_snp]
+
+                mirtops = [str(m) for m in mirtops]
+                row += mirtops
+
                 # Save
                 rows.append(row)
 
@@ -4228,7 +4320,7 @@ class Output(object):
             header += sample_names
 
             # Annotations
-            header += self._headers_annotations(conf, alignments)
+            header += self._headers_annotations(conf, alignments, True)
 
             # Include post-filtered locations/cigars
             header += "Locations CIGARs_5pto3p soft_clipped?".split()
