@@ -19,12 +19,12 @@ Download the sequences from BioMart
   + Click **- CHOOSE DATABASE -** and select **Ensembl Genes xx** where 
     *xx* is the current version of Ensembl.
   + Click **- CHOOSE DATASET -** and select your species of interest (e.g.
-    *Danio rerio genes (Zv9)*).
+    *Danio rerio genes (GRCz10)*).
   + Click **Filters**
 
     - Click the **+** button next to **GENE** to expand that box.
-    - Under **Gene Type**, select all of the following (you may have to
-      ctrl-click or cmd-click to select multiples at the same time):
+    - Under **Gene Type**, select all of the following if present (you may have
+      to ctrl-click or cmd-click to select multiples at the same time):
 
       * lincRNA
       * miRNA
@@ -38,18 +38,18 @@ Download the sequences from BioMart
   - Click **Attributes** 
 
     - Click the **Sequences** radio button.
-    - Click the **+** button next to **SEQUENCE** to expand that box.
+    - Click the **+** button next to **SEQUENCES** to expand that box.
 
       - Click the **cDNA sequences** radio button.
 
-    - Click the **+** button next to **Header Information** to expand that box.
+    - Click the **+** button next to **HEADER INFORMATION** to expand that box.
 
       - Uncheck all the checkboxes.
       - Check the these boxes **in the following order**: 
 
-        - Associated Gene Name
-        - Transcript Biotype
-        - Ensembl Transcript ID
+        - Gene Name
+        - Transcript type
+        - Transcript stable ID
 
 + *Optional*: Click *Count* to see how many sequences will be returned.
 + Click *Results* to generate the fasta file.
