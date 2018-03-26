@@ -1233,16 +1233,6 @@ class ShortSeq(SlotPickleMixin):
         """
         return self.seq_str[1:8]
 
-    @property
-    def three_prime_supplementary(self):
-        """The 3'-supplementary region of this ShortSeq.
-
-        Returns:
-            str: The 4 nucleotide 3'-supplementary region (nts 13-16).
-
-        """
-        return self.seq_str[12:16]
-
     def __init__(self, seq_str, num_samples):
         self.seq_str = seq_str
         self._sum_norm = -1.0
@@ -1257,9 +1247,9 @@ class ShortSeq(SlotPickleMixin):
         self.genomic_locations = []
         self.no_hit_genomic_locations = []
         self.annotations = []
-        self.iso_5p = 0
-        self.iso_3p = 0
-        self.iso_add = 0
+        self.iso_5p = 'NA'
+        self.iso_3p = 'NA'
+        self.iso_add = 'NA'
         self.iso_snp_seed = False
         self.iso_snp_central_offset = False
         self.iso_snp_central = False
@@ -2628,7 +2618,7 @@ class AnnotationBins(Bins):
             if bn:
                 self._add_to_bin(gen_loc_bin, bn)
             else:
-                print("debug Wow, found a rev_anno_only bin_starter! gen_loc_bin.idx = {}, gen_loc_bin.main_short_seq_str = {}".format(gen_loc_bin.idx, gen_loc_bin.main_short_seq_str))
+                print("Of note: Found a rev_anno_only bin_starter! gen_loc_bin.idx = {}, gen_loc_bin.main_short_seq_str = {}".format(gen_loc_bin.idx, gen_loc_bin.main_short_seq_str))
                 self._start_bin(gen_loc_bin, species_mir_rev_annos)
 
 
@@ -2952,7 +2942,9 @@ class Bin(SlotPickleMixin):
             'per_sample_seed_shifted_totals',
             # NTs 2-8 -- ins/del/mismatch
             'per_sample_seed_edited_totals',
-            # NTs 13-16
+            # NTs 9-12
+            'per_sample_central_edited_totals',
+            # NTs 13-17
             'per_sample_3p_supplementary_edited_totals',
 
             # Shorter/Longer/Untemplated-addition
@@ -2985,6 +2977,7 @@ class Bin(SlotPickleMixin):
         self.per_sample_read_totals = None
         self.per_sample_seed_shifted_totals = None
         self.per_sample_seed_edited_totals = None
+        self.per_sample_central_edited_totals = None
         self.per_sample_3p_supplementary_edited_totals = None
         self.per_sample_3p_alt_cut_totals = None
         self.per_sample_3p_mismatch_totals = None
@@ -3066,6 +3059,26 @@ class Bin(SlotPickleMixin):
             return self.per_sample_seed_edited_totals.na()
         else:
             return self.per_sample_seed_edited_totals.perc(self.per_sample_read_totals)
+
+    def per_sample_perc_central_edited(self, na):
+        """Calculate the per-sample percentage of this Bin's members which have
+        their central region edited with respect to the Bin's main sequence.
+
+        Args:
+            na (bool): If na is true, then instead return a list of same length
+                but filled with 'NA's. Useful for output purposes.
+
+        Returns:
+            [float]: An array of floats representing the per-sample percentage
+                of this Bin's members which have been central region
+                edited.  Or an array of 'NA's if 'na' is True.
+
+        """
+        if na:
+            return self.per_sample_central_edited_totals.na()
+        else:
+            return self.per_sample_central_edited_totals.perc(
+                self.per_sample_read_totals)
 
     def per_sample_perc_3p_supplementary_edited(self, na):
         """Calculate the per-sample percentage of this Bin's members which have
@@ -3480,6 +3493,7 @@ class GenLocBin(Bin):
         self.per_sample_read_totals = SamplesCountsWithNorms(num_samples)
         self.per_sample_seed_shifted_totals = SamplesCounts(num_samples)
         self.per_sample_seed_edited_totals = SamplesCounts(num_samples)
+        self.per_sample_central_edited_totals = SamplesCounts(num_samples)
         self.per_sample_3p_supplementary_edited_totals = SamplesCounts(num_samples)
         self.per_sample_3p_alt_cut_totals = SamplesCounts(num_samples)
         self.per_sample_3p_mismatch_totals = SamplesCounts(num_samples)
@@ -3496,8 +3510,8 @@ class GenLocBin(Bin):
             # Calc & cache per-sample read count totals across this Bin
             self.per_sample_read_totals += short_seq.samples_counts
 
-            # Calc per-sample seed_shifted, seed_edited, 3'
-            # supplementary edited, 3' modification, 3' untemplated addition,
+            # Calc per-sample seed_shifted, seed_edited, central edited,
+            # 3' supplementary edited, 3' modification, 3' untemplated addition,
             # and other edited totals.
 
             # For the %-columns, we skip bins not started by a designation one.
@@ -3558,58 +3572,46 @@ class GenLocBin(Bin):
 
             mod_thing = mod_things[0]
 
-            ## Seed shifted?
-
-            if 'is_seed_shifted' in disagreements:
-                pmsg("""
-                        Warning: Found two Alignment Hits from one member
-                        sequence of a GenomicLocationBin with a mixture of
-                        seed shifted and not seed shifted members.  NOT including
-                        these counts in the %-columns calculations.
-                        Main seq:   {}
-                        Member seq: {}
-                        Main seq's gen_locs:   {}
-                        Member seq's gen_locs: {}""".format(
-                            main_seq,
-                            short_seq,
-                            main_seq.genomic_locations,
-                            short_seq.genomic_locations))
-                #raise MirModificationCalculationException, \
-                #    """ERR909: Found short seq with mixture of seed_shifted and
-                #        not_seed_shifted genomic location
-                #        bins:\n\tloc{}""".format(self.idx)
-
-            elif mod_thing.is_seed_shifted:
-
-                self.per_sample_seed_shifted_totals += short_seq.samples_counts
-
-            elif not mod_thing.is_seed_shifted:
-
-                ## Seed edited?
-
-                if short_seq.seed != main_seq.seed:
-                    # yes, seed edited
-                    self.per_sample_seed_edited_totals += short_seq.samples_counts
-
-                ## Supplementary region edited?
-
-                if (short_seq.three_prime_supplementary !=
-                        main_seq.three_prime_supplementary):
-                    # Yes, supplementary edited
-                    self.per_sample_3p_supplementary_edited_totals += \
-                        short_seq.samples_counts
-
             disagreement_error_msg = """
                 Warning: Found two Alignment Hits from one member
                 sequence of a GenomicLocationBin with a mixture of
-                {} and not {} shifted members.  NOT including these
+                {} and not {} members.  NOT including these
                 counts in the %-columns calculations.
                 Main seq:   {}
                 Member seq: {}
                 Main seq's gen_locs:   {}
                 Member seq's gen_locs: {}"""
 
-            ## 3p Alt cut?
+            # Note: We're now tracking any disagreements about any of the 6 modification categories.
+            #       Looking at past Prost runs, the vast majority are just is_3p_alt_cut and is_3p_mismatch.
+            #       The others are likely just initial development bugs that were ironed out quickly.
+            #       And of course, really, logically, there should never be a disagreement about
+            #       any of the "edited" categories since we're only reporting "edited" categories for
+            #       gen_loc_bins with DESIGNATION_ONE binstarters.
+            # $ for A in */*log ; do grep "NOT including" $A ; done | column -t | sort | uniq -c
+            # 1669 is_3p_alt_cut    and  not  is_3p_alt_cut    shifted  members.  NOT  including  these
+            # 2512 is_3p_mismatch   and  not  is_3p_mismatch   shifted  members.  NOT  including  these
+            #    9 is_other_edited  and  not  is_other_edited  shifted  members.  NOT  including  these
+            #    1 shifted          and  not  seed             shifted  members.  NOT  including  these
+
+            ## Seed Shifted? / iso_5p?
+
+            if 'is_seed_shifted' in disagreements:
+                mod = 'is_seed_shifted'
+                # Note: Logically (??) it's hard to see how there could be disagreements
+                #       between different genomic locations w/r/t is_seed_shifted.
+                #       Nonetheless, logging is_seed_shifted disagreements just like the
+                #       others.  See counts listed in note above.
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.is_seed_shifted:
+                self.per_sample_seed_shifted_totals += short_seq.samples_counts
+                short_seq.iso_5p = mod_thing.iso_5p
+            else:
+                short_seq.iso_5p = 0
+
+            ## 3p Alt cut? / iso_3p?
 
             if 'is_3p_alt_cut' in disagreements:
                 mod = 'is_3p_alt_cut'
@@ -3618,8 +3620,11 @@ class GenLocBin(Bin):
                         short_seq.genomic_locations))
             elif mod_thing.is_3p_alt_cut:
                 self.per_sample_3p_alt_cut_totals += short_seq.samples_counts
+                short_seq.iso_3p = mod_thing.iso_3p
+            else:
+                short_seq.iso_3p = 0
 
-            ## 3p Mismatch?
+            ## 3p Mismatch? / iso_add?
 
             if 'is_3p_mismatch' in disagreements:
                 mod = 'is_3p_mismatch'
@@ -3628,16 +3633,108 @@ class GenLocBin(Bin):
                         short_seq.genomic_locations))
             elif mod_thing.is_3p_mismatch:
                 self.per_sample_3p_mismatch_totals += short_seq.samples_counts
+                short_seq.iso_add = mod_thing.iso_add
+            else:
+                short_seq.iso_add = 0
 
-            ## Other Edited?
+            # Editing....
+            # Note: Logically, since we only report iso_snp_* and is_*_edited for
+            #       gen_loc_bins with a DESIGNATION_ONE binstarter, there should
+            #       never be a disagreement in an edited field.  Nonetheless,
+            #       for consistency and just in case of logic error, logging this.
+            #       See counts listed in note above.
 
-            if 'is_other_edited' in disagreements:
-                mod = 'is_other_edited'
+            ## Seed Edited?
+
+            if 'is_seed_edited' in disagreements:
+                mod = 'is_seed_edited'
                 pmsg(disagreement_error_msg.format(mod, mod, main_seq,
                         short_seq, main_seq.genomic_locations,
                         short_seq.genomic_locations))
-            elif mod_thing.is_other_edited:
+            elif mod_thing.is_seed_edited:
+                self.per_sample_seed_edited_totals += short_seq.samples_counts
+
+            ## iso_snp_seed?
+
+            if 'iso_snp_seed' in disagreements:
+                mod = 'iso_snp_seed'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.iso_snp_seed:
+                self.iso_snp_seed = True
+            else:
+                self.iso_snp_seed = False
+
+            ## iso_snp_central_offset?
+
+            if 'iso_snp_central_offset' in disagreements:
+                mod = 'iso_snp_central_offset'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.iso_snp_central_offset:
+                self.iso_snp_central_offset = True
+            else:
+                self.iso_snp_central_offset = False
+
+            ## Central Edited? / iso_snp_central?
+
+            if 'is_central_edited' in disagreements:
+                mod = 'is_central_edited'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.is_central_edited:
+                self.per_sample_central_edited_totals += short_seq.samples_counts
+                short_seq.iso_snp_central = True
+            else:
+                short_seq.iso_snp_central = False
+
+            ## 3p Supplementary Edited? / iso_central_supp?
+
+            if 'is_3p_supplementary_edited' in disagreements:
+                mod = 'is_3p_supplementary_edited'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.is_3p_supplementary_edited:
+                self.per_sample_3p_supplementary_edited_totals += short_seq.samples_counts
+                short_seq.iso_central_supp = True
+            else:
+                short_seq.iso_central_supp = False
+
+            ## Other Edited? / iso_snp?
+
+            other_edited = False
+
+            ## 3p first...
+
+            if 'is_other_edited_3p' in disagreements:
+                mod = 'is_other_edited_3p'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.is_other_edited_3p:
+                other_edited = True
+
+            ## 5p now...
+
+            if 'is_other_edited_5p' in disagreements:
+                mod = 'is_other_edited_5p'
+                pmsg(disagreement_error_msg.format(mod, mod, main_seq,
+                        short_seq, main_seq.genomic_locations,
+                        short_seq.genomic_locations))
+            elif mod_thing.is_other_edited_5p:
+                other_edited = True
+
+            ## Finalize
+
+            if other_edited:
                 self.per_sample_other_edited_totals += short_seq.samples_counts
+                short_seq.iso_snp = True
+            else:
+                short_seq.iso_snp = False
 
 
 class ModificationThing(object):
@@ -3649,7 +3746,33 @@ class ModificationThing(object):
     * seed shifted
     * mismatched on the 3p side (putatitve untemplated addition)
     * longer/shorter (put alt cut or post-cut trimmed)
+    * seed edited
+    * central edited
+    * supplementary edited
     * "other" edited
+
+    Update 20180321:
+        Originally Prost had the 6 categories of post transcriptional modifications.
+        Then we added the 8 miRTop categories, which mostly overlap with the
+        original 6 Prost categories, but not quite.  Here's where we stand today:
+
+            iso_5p  == is_seed_shifted
+            iso_3p  == is_3p_alt_cut
+            iso_add == is_3p_mismatch
+
+            is_seed_edited =                editing in NTs 2-8
+            is_central_edited =             editing in NTs 9-12
+            is_3p_supplementary_edited =    editing in NTs 13-17
+            is_other_edited_5p =            editing in NT 1
+            is_other_edited_3p =            editing in NTs 18-lastMatchingNT
+
+            iso_snp_seed =                  editing in NTs 2-7
+            iso_snp_central_offset =        editing in NTs 8
+            iso_snp_central =               editing in NTs 9-12
+            iso_snp_supp =                  editing in NTs 13-17
+            iso_snp =                       editing anywhere else
+            iso_snp_5p =                    editing in NT 1
+            iso_snp_3p =                    editing in NTs 18-lastMatchingNT
 
     Examples:
 
@@ -3682,9 +3805,22 @@ class ModificationThing(object):
     """
 
     __slots__ = (   'is_seed_shifted',
-                    'is_3p_mismatch',
                     'is_3p_alt_cut',
-                    'is_other_edited')
+                    'is_3p_mismatch',
+                    'is_seed_edited',
+                    'is_central_edited',
+                    'is_3p_supplementary_edited',
+                    'is_other_edited_5p',
+                    'is_other_edited_3p',
+                    'iso_5p',
+                    'iso_3p',
+                    'iso_add',
+                    'iso_snp_seed',
+                    'iso_snp_central_offset',
+                    'iso_snp_central',
+                    'iso_snp_supp',
+                    'iso_snp_5p',
+                    'iso_snp_3p', )
 
     @classmethod
     def disagreements(self, modification_things):
@@ -3747,9 +3883,23 @@ class ModificationThing(object):
         """
         # Initialize:
         self.is_seed_shifted = False
-        self.is_3p_mismatch = False
         self.is_3p_alt_cut = False
-        self.is_other_edited = False
+        self.is_3p_mismatch = False
+        self.is_seed_edited = False
+        self.is_central_edited = False
+        self.is_3p_supplementary_edited = False
+        self.is_other_edited_5p = False
+        self.is_other_edited_3p = False
+        self.iso_5p = 0
+        self.iso_3p = 0
+        self.iso_add = 0
+        self.iso_snp_seed = False
+        self.iso_snp_central_offset = False
+        self.iso_snp_central = False
+        self.iso_snp_supp = False
+        self.iso_snp_5p = False
+        self.iso_snp_3p = False
+
 
         # Same linkage group, same strand
         assert(main_hit.lg == member_hit.lg)
@@ -3778,10 +3928,17 @@ class ModificationThing(object):
             * is_3p_alt_cut - If the last matching 3p nucleotide in the member
                 hit has the same position as the last matching 3p nucleotide in
                 the main hit, then it is *not* 3p alternatively cut.
-            * is_other_edited - If there a mimsatch outside of the seed region
-                and the 3p-supplementary region, then it is other edited.
-                (In other words, at nt1, or between nt9 and nt12, or between
-                nt17 and the last matching nt.)
+            * is_seed_edited - If there a missatch in the seed region
+                it is seed edited.
+            * is_central_edited - If there a missatch in the central region
+                (NTs 9-12) it is central edited.
+            * is_3p_supplementary_edited - If there a missatch in the 3 prime
+                supplementary region (NTs 9-12) it is supplementary edited.
+            * is_other_edited_5p - If there a missatch at NT 1, then it
+                is other_edited_5p.
+            * is_other_edited_3p - If there a missatch at NT 18 until the last
+                matching NT, then it is other_edited_3p.
+            * Plus all the iso_* fields
 
         Arguments:
             mm_coords (int,): A list of coordinates of mismatches found in the
@@ -3807,22 +3964,19 @@ class ModificationThing(object):
                 not (member_hit.reference_start_with_clips ==
                         main_hit.reference_start_with_clips))
 
-        # Note: Seed edited & 3p-supplementary edited are handled at the
-        # ShortSeq level, not here at the hit level.
-
         ## iso_5p ?
         if self.is_seed_shifted:
-            member_seq.iso_5p = (main_hit.reference_start_with_clips - \
+            self.iso_5p = (main_hit.reference_start_with_clips - \
                     member_hit.reference_start_with_clips)
             if member_hit.on_minus_strand:
-                member_seq.iso_5p = -member_seq.iso_5p
+                self.iso_5p = -self.iso_5p
 
         ## 3p mismatch?
         # TODO: consider adding 'S' and 'H' here as well?
         # Recall, cigar_tokens_5pto3p look like this: ((1, 'X'), (18, '='), (2, 'X'))
         if member_hit.cigar_tokens_5pto3p[-1][1] == 'X':
             self.is_3p_mismatch = True
-            member_seq.iso_add = member_hit.cigar_tokens_5pto3p[-1][0]
+            self.iso_add = member_hit.cigar_tokens_5pto3p[-1][0]
         elif member_hit.cigar_tokens_5pto3p[-1][1] == '=':
             pass
         elif member_hit.cigar_tokens_5pto3p[-1][1] == 'M':
@@ -3883,42 +4037,56 @@ class ModificationThing(object):
 
         ## iso_3p
         if self.is_3p_alt_cut:
-            member_seq.iso_3p = (member_last_matching_nt_3p_end -
+            self.iso_3p = (member_last_matching_nt_3p_end -
                     main_last_matching_nt_3p_end)
 
-        ## other edited?
-        # If the mismatch is located outside of the seed region (nts 2-8),
-        # or outside the 3p-supplemenary-region (nts 13-16), then it is
-        # "other edited".  To distinguish is_other_edited from is_3p_mismatch,
-        # we force is_other_edited to only consider nucleotides from nt17 until
-        # the last matching nucleotide on the 3p end (basically, the last
-        # matching nucleotide is the "border" between is_other_edited and
-        # is_3p_mismatch).
 
-        for mm in mm_coords:
-            if (    (mm == 1) or
-                    (mm >= 9 and mm <= 12) or
-                    (mm >= 17 and mm < member_last_matching_nt_3p_end)):
-                self.is_other_edited = True
-                break
 
+        ## is_*_edited and iso_snp_* ?
+        #
+        # We note that since we only report is_*_edited iso_snp_* for sequences
+        # that are a member of a gen_loc_bin with a DESIGNATION_ONE binstarter,
+        # that there can never be a disagreement between mod_things w/r/t any
+        # of the "edited" / "iso_snp_*" categories.
+        #
         # iso_snp_seed           -> SNP at NTs 2-7
         # iso_snp_central_offset -> SNP at NT 8
         # iso_snp_central        -> SNP at NTs 9-12
         # iso_snp_supp           -> SNP at NTs 13-17
         # iso_snp                -> SNP anywhere else.
+        # iso_snp_5p             -> SNP at NT 1
+        # iso_snp_3p             -> SNP at NT 18 onwards to last matching NT
+        #
+        # Note also that we keep our definition of is_seed_edited to be NTs 2-8.
+
         for mm in mm_coords:
+            if (mm >= 2 and mm <= 8):
+                self.is_seed_edited = True
             if (mm >= 2 and mm <= 7):
-                member_seq.iso_snp_seed = True
+                self.iso_snp_seed = True
             if (mm == 8):
-                member_seq.iso_snp_central_offset = True
+                self.iso_snp_central_offset = True
             if (mm >= 9 and mm <= 12):
-                member_seq.iso_snp_central = True
+                self.is_central_edited = True
+                self.iso_snp_central = True
             if (mm >= 13 and mm <= 17):
-                member_seq.iso_snp_supp = True
-            if ((mm == 1) or
-                (mm >= 18 and mm < member_last_matching_nt_3p_end)):
-                member_seq.iso_snp = True
+                self.is_3p_supplementary_edited = True
+                self.iso_snp_supp = True
+            if (mm == 1):
+                self.is_other_edited_5p = True
+                self.iso_snp_5p = True
+            ## other edited on 3p end?
+            # If the mismatch is located outside of the seed region (nts 2-8),
+            # outside the central region (nts 9-12), or outside the
+            # 3p-supplemenary-region (nts 13-17), then it is "other edited".
+            # To distinguish is_other_edited from is_3p_mismatch, we force
+            # is_other_edited to only consider nucleotides from nt17 until the
+            # last matching nucleotide on the 3p end (basically, the last
+            # matching nucleotide is the "border" between is_other_edited and
+            # is_3p_mismatch).
+            if (mm >= 18 and mm < member_last_matching_nt_3p_end):
+                self.is_other_edited_3p = True
+                self.iso_snp_3p = True
 
     @classmethod
     def _mismatches_coords(self, main_hit, member_hit):
@@ -4489,6 +4657,8 @@ class Output(object):
             for sample_name in samples.iterkeys():
                 header.append("{}_%seed_edited".format(sample_name))
             for sample_name in samples.iterkeys():
+                header.append("{}_%central_edited".format(sample_name))
+            for sample_name in samples.iterkeys():
                 header.append("{}_%3'-supplementary_edited".format(sample_name))
             for sample_name in samples.iterkeys():
                 header.append("{}_%3'-alternatively_cut".format(sample_name))
@@ -4585,6 +4755,7 @@ class Output(object):
                 na = (starter_seq.designation_integer >= DESIGNATION_THREE)
                 row += [str(i) for i in bn.per_sample_perc_seed_shifted(na)]
                 row += [str(i) for i in bn.per_sample_perc_seed_edited(na)]
+                row += [str(i) for i in bn.per_sample_perc_central_edited(na)]
                 row += [str(i) for i in bn.per_sample_perc_3p_supplementary_edited(na)]
                 row += [str(i) for i in bn.per_sample_perc_3p_alt_cut(na)]
                 row += [str(i) for i in bn.per_sample_perc_3p_mismatch(na)]
