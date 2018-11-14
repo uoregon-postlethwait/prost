@@ -2262,8 +2262,8 @@ class ShortSeqs(dict):
                     # continue.
                     continue
 
-                if any(a.__class__ == MirbaseMirAnnotation for a in
-                        short_seq.annotations):
+                if any(a.__class__ == MirbaseMirAnnotation and
+                        a.kind == a.Kind.species for a in short_seq.annotations):
                     # This short_seq already has a forward annotation, do not
                     # give it a reverse annotation.
                     # Preventing rev_annos when fwd_annos exist in gen_loc_bins
