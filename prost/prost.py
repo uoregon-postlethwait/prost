@@ -2246,6 +2246,7 @@ class ShortSeqs(dict):
         annotation_cls = annotation_alignment.annotation_cls
         assert(annotation_cls == MirbaseMirReverseAnnotation)
         for hit in annotation_alignment.alignment_execution.hits_full_len_100_perc_core():
+
             # Note - Above we have *hard-coded* the fact that a reverse alignment
             # a full length perfect match.
             if (hit.reference_start < hit.reference_end):
@@ -2261,12 +2262,13 @@ class ShortSeqs(dict):
                     # continue.
                     continue
 
-                if any(a.__class__ == MirbaseMirAnnotation for a in
+                if any(a.__class__ == MirbaseMirAnnotation and a.kind == a.Kind.species for a in
                         short_seq.annotations):
                     # This short_seq already has a forward annotation, do not
                     # give it a reverse annotation.
                     # Preventing rev_annos when fwd_annos exist in gen_loc_bins
                     # is implemented elsewhere, in mirbase_mir_reverse_annotations().
+                    
                     continue
 
                 annotation = annotation_cls(hit, species)
@@ -3176,8 +3178,6 @@ class Bin(SlotPickleMixin):
             If there exists an other_species normal "forward" annotation, then
             there we define that there is no other_species reverse annotation.
         """
-        # return self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
-
         fwd_annos = self._mirbase_annotations(short_seqs, MirbaseMirAnnotation)
         rev_annos = self._mirbase_annotations(short_seqs, MirbaseMirReverseAnnotation)
         fwd_annos_in_species, fwd_annos_other_species = fwd_annos
