@@ -3315,6 +3315,9 @@ class AnnotationBin(Bin):
 
 class SeedBin(Bin):
 
+    # Make sure we don't accidentally add new attributes.
+    __slots__ = []
+
     def mirbase_mir_annotations(self, short_seqs, gen_loc_bins):
         """See self._mirbase_annotations()."""
         return self._mirbase_annotations(short_seqs, gen_loc_bins,
@@ -3367,6 +3370,9 @@ class SeedBin(Bin):
 class GenLocBin(Bin):
     """A Bin containing ShortSeq objects grouped accordinging to their
     genomic locations."""
+
+    # Make sure we don't accidentally add new attributes.
+    __slots__ = []
 
     def _mirbase_annotations(self, short_seqs, annotation_cls):
         """
@@ -3662,9 +3668,9 @@ class GenLocBin(Bin):
                         short_seq, main_seq.genomic_locations,
                         short_seq.genomic_locations))
             elif mod_thing.iso_snp_seed:
-                self.iso_snp_seed = True
+                short_seq.iso_snp_seed = True
             else:
-                self.iso_snp_seed = False
+                short_seq.iso_snp_seed = False
 
             ## iso_snp_central_offset?
 
@@ -3674,9 +3680,9 @@ class GenLocBin(Bin):
                         short_seq, main_seq.genomic_locations,
                         short_seq.genomic_locations))
             elif mod_thing.iso_snp_central_offset:
-                self.iso_snp_central_offset = True
+                short_seq.iso_snp_central_offset = True
             else:
-                self.iso_snp_central_offset = False
+                short_seq.iso_snp_central_offset = False
 
             ## Central Edited? / iso_snp_central?
 
