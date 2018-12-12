@@ -2268,7 +2268,7 @@ class ShortSeqs(dict):
                     # give it a reverse annotation.
                     # Preventing rev_annos when fwd_annos exist in gen_loc_bins
                     # is implemented elsewhere, in mirbase_mir_reverse_annotations().
-                    
+
                     continue
 
                 annotation = annotation_cls(hit, species)
@@ -3697,7 +3697,9 @@ class GenLocBin(Bin):
             else:
                 short_seq.iso_snp_central = False
 
-            ## 3p Supplementary Edited? / iso_central_supp?
+            ## 3p Supplementary Edited? / iso_snp_supp?
+
+            # Note - may wish to redefine this later for the 16=1X case.
 
             if 'is_3p_supplementary_edited' in disagreements:
                 mod = 'is_3p_supplementary_edited'
@@ -3706,9 +3708,9 @@ class GenLocBin(Bin):
                         short_seq.genomic_locations))
             elif mod_thing.is_3p_supplementary_edited:
                 self.per_sample_3p_supplementary_edited_totals += short_seq.samples_counts
-                short_seq.iso_central_supp = True
+                short_seq.iso_snp_supp = True
             else:
-                short_seq.iso_central_supp = False
+                short_seq.iso_snp_supp = False
 
             ## Other Edited? / iso_snp?
 
@@ -3939,7 +3941,7 @@ class ModificationThing(object):
             * is_central_edited - If there a missatch in the central region
                 (NTs 9-12) it is central edited.
             * is_3p_supplementary_edited - If there a missatch in the 3 prime
-                supplementary region (NTs 9-12) it is supplementary edited.
+                supplementary region (NTs 13-17) it is supplementary edited.
             * is_other_edited_5p - If there a missatch at NT 1, then it
                 is other_edited_5p.
             * is_other_edited_3p - If there a missatch at NT 18 until the last
