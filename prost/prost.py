@@ -4077,7 +4077,11 @@ class ModificationThing(object):
             if (mm >= 9 and mm <= 12):
                 self.is_central_edited = True
                 self.iso_snp_central = True
-            if (mm >= 13 and mm <= 17):
+            # To distinguish is_supplementary_edited from is_3p_mismatch, we require
+            # there to be at least one matching nucleotide between this mismatched NT
+            # and the 3-prime end of the miRNA. For example, 16=3X would *not* be
+            # considered is_supplementary_edited even though NT 17 is mismatched.
+            if (mm >= 13 and mm <= 17 and mm < member_last_matching_nt_3p_end):
                 self.is_3p_supplementary_edited = True
                 self.iso_snp_supp = True
             if (mm == 1):
