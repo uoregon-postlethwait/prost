@@ -1,11 +1,11 @@
-Prost! Software Academic License Agreement                       April 16, 2015
+Prost! Software Academic License Agreement                       April 16, 2015
 
 The Prost! software ("Software") has been developed by the contributing
 researchers Peter Batzel, Jason Sydes, and Thomas Desvignes ("Developers") and
 made available through the University of Oregon ("UO") for your internal,
 non-profit research use.  The Software was developed through support of a
 variety of funding sources, including the NIH grants U01 DE020076, and R01
-OD011116, and 5R240D011199.  UO and the Developers allow researchers at your
+OD011116, and R24 OD011199.  UO and the Developers allow researchers at your
 Institution to run, display, copy and modify Software on the following
 conditions:
 
