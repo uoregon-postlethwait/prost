@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2014-2017 Peter Batzel and Jason Sydes
+# Copyright (C) 2015-2019 University of Oregon
 #
 # This file is part of Prost!.
 #
