@@ -27,10 +27,8 @@ Authors
 News
 ====
 
-**June 2nd, 2015**: A 
-`FLOSS <http://http://www.gnu.org/philosophy/floss-and-foss.en.html>`_
-license will be available soon for academic/personal use of *Prost!*.  We're
-working with University of Oregon to get this up soon.
+**March 8th, 2019**: *Prost!* was published in 
+`Scientific Reports <https://www.nature.com/articles/s41598-019-40361-8>`_.
 
 Site Contents
 =============
@@ -320,6 +318,11 @@ Funding
 * Signaling Hierarchies in Vertebrate Development: CP1:  A zebrafish model of phenotypic variation associated with Fraser syndrome; NIH - Eunice Kennedy Shriver National Institute of Child Health and Human Development (P01 HD22486)
 * Antarctic Fish and MicroRNA Control of Development and Physiology; NSF - Office of Polar Program (OPP #154338)
 
+Citing *Prost!*
+===============
+
+Thomas Desvignes, Peter Batzel, Jason Sydes, B. Frank Eames, and John H. Postlethwait. 2019. “MiRNA Analysis with Prost! Reveals Evolutionary Conservation of Organ-Enriched Expression and Post-Transcriptional Modifications in Three-Spined Stickleback and Zebrafish.” Scientific Reports 9 (1): 3913. https://doi.org/10.1038/s41598-019-40361-8.
+
 .. Hyperlinks
 .. _Python: http://www.python.org/
 .. _mature.fa: ftp://mirbase.org/pub/mirbase/CURRENT/mature.fa.gz
@@ -328,11 +331,3 @@ Funding
 .. If you want 
    .. automodule:: prost
    :members:
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
