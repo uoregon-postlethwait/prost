@@ -4,16 +4,23 @@
 *Prost!*
 ********
 
-*Prost!* (PRocessing Of Small Transcripts) is a python application that
-quantifies and annotates microRNA (miRNA) expression in metazoans with
-assembled genomes.  *Prost!* works by counting short transcripts within a
-user-specifiable length range.  These counted transcripts are aligned to a user
-specifiable genome allowing for post-transcriptional modification (e.g.
-untemplated additions, editing, alternative cutting) and then "binned" together
-based on genomic location.  Each bin is then annotated with databases of mature
-miRNAs, hairpins, and other types of RNAs (the databases may be derived from
-miRBase, Ensembl's BioMart, other databases, or may be custom built by the
-user).
+*Prost!* (PRocessing Of Short Transcripts) can analyze smallRNA sequencing data
+generated on any sequencing platform. *Prost!* does not rely on existing
+annotation to filter sequencing reads but instead starts by aligning all the
+reads on a user-provided genomic reference, allowing the study of miRNAs in any
+species. Additionally, any number of samples can be studied together in a
+single *Prost!* run, allowing an accurate analysis of an entire dataset. After
+grouping the processed reads by genomic location, *Prost!* then annotates them
+using a user-defined annotation database (public or personal annotation
+database). Genomic alignment, grouping, and then annotation enable the study of
+potentially novel miRNAs, as well as permitting the retention of all the
+isomiRs that a miRNA may display. Finally *Prost!* contains additional features
+such as grouping by seed sequence for a more functional approach of the
+dataset, provides automatic discovery of potential mirror-miRNAs, and analyzes
+the frequency of various types of post-transcriptional modifications at each
+genomic location. Each step of the *Prost!* analysis is provided in an Excel
+output file so that the user have access to all information for deeper analysis
+of specific cases.
 
 Authors
 =======
@@ -42,6 +49,7 @@ overview of the content of the other pages.
 
    demo
    output
+   de_novo_annotation
    bbmap
    biomart
 
@@ -188,9 +196,17 @@ in the annotation FASTA files.)
   following fake BioMart file: `fake_biomart_file.fa <https://raw.githubusercontent.com/uoregon-postlethwait/prost/master/fake_biomart_file.fa>`_
 
 *Prost!* Output
-```````````````
+===============
 
 See :doc:`output` for a description of the output of *Prost!*.
+
+
+De novo miRNA annotation
+========================
+
+See :doc:`de_novo_annotation` to read about a method of using *Prost!* output
+to perform de novo miRNA annotation.
+
 
 .. _command_line_help:
 
@@ -321,7 +337,13 @@ Funding
 Citing *Prost!*
 ===============
 
+If you use *Prost!*, please cite it like so:
+
 Thomas Desvignes, Peter Batzel, Jason Sydes, B. Frank Eames, and John H. Postlethwait. 2019. “MiRNA Analysis with Prost! Reveals Evolutionary Conservation of Organ-Enriched Expression and Post-Transcriptional Modifications in Three-Spined Stickleback and Zebrafish.” Scientific Reports 9 (1): 3913. https://doi.org/10.1038/s41598-019-40361-8.
+
+*Prost!* has been previously cited like so:
+
+Thomas Desvignes, Peter Batzel, Jason Sydes, B. Frank Eames, & John H. Postlethwait. (2019, March 9). Prost!, a tool for miRNA annotation and next generation smallRNA sequencing experiment analysis (Version v0.7.53). Zenodo. http://doi.org/10.5281/zenodo.594353.
 
 .. Hyperlinks
 .. _Python: http://www.python.org/
@@ -331,3 +353,4 @@ Thomas Desvignes, Peter Batzel, Jason Sydes, B. Frank Eames, and John H. Postlet
 .. If you want 
    .. automodule:: prost
    :members:
+

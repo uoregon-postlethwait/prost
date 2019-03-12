@@ -59,8 +59,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Prost!'
-copyright = u'2014, 2015 Jason Sydes and Peter Batzel'
-author = u'Jason Sydes and Peter Batzel'
+copyright = u'2015-2019 University of Oregon'
+author = u'Jason Sydes, Peter Batzel, Thomas Desvignes, Brian F. Eames, John H. Postlethwait'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
