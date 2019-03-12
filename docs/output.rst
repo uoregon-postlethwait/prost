@@ -4,6 +4,4 @@
 *Prost!* Output
 ***************
 
-We're working hard on producing documentation about the output of *Prost!*.
-
-Check back soon!
+Please see the following file for a description of *Prost!* output: :download:`Prost_output_documentation_March2019.pdf <files/Prost_output_documentation_March2019.pdf>`.
