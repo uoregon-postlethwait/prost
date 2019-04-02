@@ -35,6 +35,7 @@ from prost.common import (
     ConfigurationException,
     CannotContinueException,
     PrerequisitesException,
+    UracilInAnnotationFastaException,
     MirModificationCalculationException,
     ModificationThingEncounteredNAlignment,
     ArgumentTypeException,
@@ -119,6 +120,52 @@ def get_85perc_system_memory():
         int: 85% of the system memory.
     """
     return int(psutil.virtual_memory().total * 0.85 / 1024**3)
+
+def check_input_files(conf):
+    """Check input files.
+
+    Does the following:
+        - Confirms no uracils in annotation files (BBMap up until v38.42 crashes
+          when U's are in query file).
+
+    Arguments:
+        conf (Configuration): The Configuration singleton object.
+    """
+
+    # Collect the annotation fasta files.
+    annotation_fasta_files = set()
+
+    # The mature_mir_annotation_file for reverse.
+    annotation_fasta_files.add(conf.general.mature_mir_annotation_fasta)
+
+    # The normal (forward) annotation files.
+    for conf_alignment_section_name in conf.annotation_alignment_names:
+        conf_alignment = conf.get_section(conf_alignment_section_name)
+        annotation_fasta_file = conf_alignment['db']
+        annotation_fasta_files.add(annotation_fasta_file)
+
+    # Check for uracils in annotation fasta files.
+    for annotation_fasta_file in annotation_fasta_files:
+        with open(annotation_fasta_file, 'r') as f:
+
+            while(True):
+                line = f.readline()
+                if not(line):
+                    # eof
+                    break
+                if line[0] == '>':
+                    # skip description lines
+                    continue
+                if 'U' in line:
+                    msg = ("\n\n"
+                        "    There are Uracils (U's) in the annotation FASTA files, which Prost / BBmap\n"
+                        "    does not support. Please convert them to Thymines (T's) before\n"
+                        "    proceeding. For example, here is one way to convert:\n\n"
+                        "        sed '/^[^>]/ y/uU/tT/' mature.fa > mature.thymine.fa\n"
+                        "        mv mature.fa mature.uracil.fa\n"
+                        "        mv mature.thymine.fa mature.fa\n\n")
+                    raise UracilInAnnotationFastaException, msg
+
 
 def setup_logging(conf, time_start):
     """Setup prost.log logging.
@@ -5308,8 +5355,15 @@ def main():
     # Setup logging
     setup_logging(_conf, time.time())
 
+    #####################################
+    ### Stage 0b - Check input files. ###
+    #####################################
+
+    # Check for problems in the input files.
+    check_input_files(_conf)
+
     ###############################################
-    ### Stage 0b - Read the sample fasta files. ###
+    ### Stage 0c - Read the sample fasta files. ###
     ###############################################
 
     # List of sample reads
