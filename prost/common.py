@@ -38,6 +38,8 @@ class CannotContinueException(Exception):
     """Prost has encountered a situation from which it cannot continue."""
 class PrerequisitesException(Exception):
     """Prost is missing prerequisites (e.g. an out of date BBMap version)."""
+class UracilInAnnotationFastaException(Exception):
+    """Prost/BBMap does not support Uracils (U's) in the annotation FASTA files."""
 class SamExtendedCigarParsingException(Exception):
     """Something when wrong when parsing a SAM Extended CIGAR string."""
 class SamMDTagParsingException(Exception):
