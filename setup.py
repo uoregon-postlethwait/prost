@@ -47,7 +47,7 @@ setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/technical.html#install-requires-vs-requirements-files
-    install_requires=['enum34<=1.0.4', 'docopt', 'xlsxwriter', 'psutil'],
+    install_requires=['enum34<=1.0.4', 'docopt==0.6.2', 'xlsxwriter>=1.1.4,<=1.1.7', 'psutil<=5.6.1'],
 
     # List additional groups of dependencies here (e.g. development dependencies).
     # You can install these using the following syntax, for example:
