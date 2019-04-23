@@ -441,6 +441,7 @@ def create_one(in_prefix, out_prefix, tsv_files):
         perform_formatting(sheet, header, num_rows, fmt_percent,
                 FMT_PERCENT_CONDITIONAL_TWO_COLOR,
                 FMT_PERCENT_CONDITIONAL_THREE_COLOR)
+    book.close()
     return book_filename
 
 def create_many(in_prefix, out_prefix, tsv_files):
@@ -465,6 +466,7 @@ def create_many(in_prefix, out_prefix, tsv_files):
         perform_formatting(sheet, header, num_rows, fmt_percent,
                 FMT_PERCENT_CONDITIONAL_TWO_COLOR,
                 FMT_PERCENT_CONDITIONAL_THREE_COLOR)
+    book.close()
     return book_filenames
 
 
