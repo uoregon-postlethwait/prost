@@ -4645,7 +4645,18 @@ class Output(object):
                     row.append(";".join(locs))
 
                 # Soft Clipped?
-                row.append(loc.is_soft_clipped)
+                if count_no_hit_gen_locs > max_locs_allowed:
+                    row.append("MLAE:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs > max_locs_to_report:
+                    row.append("TML:{}".format(count_no_hit_gen_locs))
+                elif count_no_hit_gen_locs == 0:
+                    # no "no_hit" locations...
+                    row.append("")
+                else:
+                    locs = []
+                    for loc in no_hit_gen_locs:
+                        locs.append("{}".format(loc.is_soft_clipped))
+                    row.append(";".join(locs))
 
                 # Save
                 rows.append(row)
